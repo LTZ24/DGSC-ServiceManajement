@@ -1,0 +1,143 @@
+# ============================================================
+# Flutter / Dart
+# ============================================================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+/coverage/
+*.dill
+lib/generated_plugin_registrant.dart
+
+# Dart analyzer outputs
+analyze_output.txt
+analyze2.txt
+analyze3.txt
+analyze4.txt
+
+# Symbolication / Obfuscation
+app.*.symbols
+app.*.map.json
+**/doc/api/
+**/ios/Flutter/.last_build_id
+
+# ============================================================
+# Android
+# ============================================================
+/android/app/debug
+/android/app/profile
+/android/app/release
+**/android/.gradle
+**/android/captures/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+
+# ============================================================
+# iOS / macOS
+# ============================================================
+**/ios/**/DerivedData/
+**/ios/**/Pods/
+**/ios/**/.symlinks/
+**/ios/**/xcuserdata
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+
+# ============================================================
+# Linux / Windows desktop
+# ============================================================
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
+
+# ============================================================
+# 🔑 SENSITIVE KEYS & SECRETS — DO NOT COMMIT
+# ============================================================
+# Firebase config (contains API keys / project credentials)
+google-services.json
+**/google-services.json
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+
+# Firebase options (auto-generated, contains API keys)
+lib/firebase_options.dart
+
+# Android signing keys
+*.keystore
+*.jks
+key.properties
+**/key.properties
+**/android/**/*.keystore
+**/android/**/*.jks
+
+# Environment / secret files
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+
+# Generic credential / service-account files
+*secret*
+*credential*
+*private_key*
+service-account*.json
+serviceaccount*.json
+*-firebase-adminsdk-*.json
+
+# ============================================================
+# Build & CI log artifacts
+# ============================================================
+apk_build2_log.txt
+apk_log.txt
+build_log.txt
+build_log2.txt
+build_log3.txt
+build_output.txt
+doctor_output.txt
+env_log.txt
+final_build_log.txt
+jdk_download_log.txt
+proc_check.txt
+proc2.txt
+check2.bat
+check_proc.bat
+check_env.bat
+
+# ============================================================
+# IntelliJ / IDE
+# ============================================================
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+.swiftpm/
+
+# ============================================================
+# Miscellaneous
+# ============================================================
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+Thumbs.db
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
