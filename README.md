@@ -192,10 +192,6 @@ Output / Hasil:
 - [build/app/outputs/flutter-apk/app-arm64-v8a-release.apk](build/app/outputs/flutter-apk/app-arm64-v8a-release.apk)
 - [build/app/outputs/flutter-apk/app-x86_64-release.apk](build/app/outputs/flutter-apk/app-x86_64-release.apk)
 
-Note / Catatan:
-- This README documents APK release only, not Play Store bundle build.
-- README ini hanya mendokumentasikan rilis APK, bukan build bundle Play Store.
-
 ## Security Notes / Catatan Keamanan
 
 **English**
