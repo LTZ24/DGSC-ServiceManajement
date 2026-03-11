@@ -222,6 +222,12 @@ Output / Hasil:
 
 ## Detailed Backend Setup / Setup Backend Lengkap
 
-See [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+<p>
+	<a href="SUPABASE_SETUP.md">
+		<img alt="Setup Backend" src="https://img.shields.io/badge/Setup%20Backend-Open%20Guide-0A7EA4?style=for-the-badge">
+	</a>
+</p>
 
-Lihat [SUPABASE_SETUP.md](SUPABASE_SETUP.md).
+Click the button above to open the backend setup guide.
+
+Klik tombol di atas untuk membuka panduan setup backend.

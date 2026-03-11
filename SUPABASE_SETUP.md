@@ -1,5 +1,19 @@
 # Setup Supabase untuk DGSC-ServiceManagement
 
+Panduan ini dipakai untuk menyiapkan backend Supabase secara aman untuk project DGSC-ServiceManagement.
+
+> Catatan keamanan
+> - Jangan taruh URL project asli, anon key, service-account JSON, atau private key ke dokumentasi publik.
+> - Semua contoh di file ini memakai placeholder seperti `YOUR_PROJECT_REF`, `YOUR_ANON_KEY`, dan `YOUR_WEB_CLIENT_ID`.
+
+## Ringkasan setup cepat
+1. Buat project Supabase baru.
+2. Jalankan [supabase/schema.sql](supabase/schema.sql).
+3. Buat akun admin pertama.
+4. Isi `dart-define` untuk Flutter.
+5. Jika memakai push notification, siapkan Firebase + Edge Function.
+6. Jika memakai Google Sign-In, siapkan OAuth client yang benar.
+
 ## 1. Buat project Supabase
 1. Login ke Supabase.
 2. Buat project baru.
@@ -356,11 +370,11 @@ Catatan:
    - boleh dikosongkan jika tidak diwajibkan oleh form,
    - atau isi origin project Supabase Anda, misalnya:
 
-     `https://axevqxvhtxemoqlvwsnu.supabase.co`
+     `https://YOUR_PROJECT_REF.supabase.co`
 
 7. Pada bagian `Authorized redirect URIs`, tambahkan URI berikut:
 
-   `https://axevqxvhtxemoqlvwsnu.supabase.co/auth/v1/callback`
+   `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
 
 8. Klik `Create`.
 9. Salin `Client ID` dan `Client Secret` yang muncul.
@@ -424,7 +438,7 @@ Tambahan penting di Supabase:
 1. Buka `Authentication` > `URL Configuration`.
 2. Isi `Site URL` bebas aman, misalnya:
 
-   `https://axevqxvhtxemoqlvwsnu.supabase.co`
+   `https://YOUR_PROJECT_REF.supabase.co`
 
 3. Simpan perubahan.
 
@@ -439,15 +453,27 @@ Untuk iOS, tambahkan juga jika diperlukan:
 
 Contoh PowerShell:
 
-`flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY --dart-define=GOOGLE_WEB_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com`
+```bash
+flutter run \
+   --dart-define=SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
+   --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY \
+   --dart-define=GOOGLE_WEB_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+```
 
 Contoh build APK:
 
-`flutter build apk --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY --dart-define=GOOGLE_WEB_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com`
+```bash
+flutter build apk \
+   --dart-define=SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
+   --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY \
+   --dart-define=GOOGLE_WEB_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
+```
 
 Jika Anda build iOS, tambahkan juga:
 
-`--dart-define=GOOGLE_IOS_CLIENT_ID=YOUR_IOS_CLIENT_ID.apps.googleusercontent.com`
+```bash
+--dart-define=GOOGLE_IOS_CLIENT_ID=YOUR_IOS_CLIENT_ID.apps.googleusercontent.com
+```
 
 ##### Variabel mana yang dipakai app saat ini
 Di implementasi sekarang:
@@ -478,7 +504,7 @@ Saat membuat client Google, yang wajib benar adalah:
 - `Name`: bebas, disarankan `DGSC Supabase Auth Web Client`
 - `Authorized redirect URI`:
 
-   `https://axevqxvhtxemoqlvwsnu.supabase.co/auth/v1/callback`
+   `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
 
 Yang lalu wajib benar di Supabase:
 - Provider `Google` aktif
@@ -530,7 +556,11 @@ Gunakan nilai project milik Anda:
 
 Contoh PowerShell:
 
-`flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY`
+```bash
+flutter run \
+   --dart-define=SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
+   --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY
+```
 
 Catatan:
 - Nama variabel aplikasi masih `SUPABASE_ANON_KEY` untuk kompatibilitas.
@@ -540,12 +570,18 @@ Catatan:
 ### Build APK
 Contoh:
 
-`flutter build apk --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY`
+```bash
+flutter build apk \
+   --dart-define=SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co \
+   --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY
+```
 
 ## 5. Install dependency baru
 Jalankan:
 
-`flutter pub get`
+```bash
+flutter pub get
+```
 
 ## 6. Seed data awal
 Setelah login sebagai admin:
@@ -582,6 +618,7 @@ Lakukan mapping data ke tabel berikut:
 - collection `counter_expenses` -> table `counter_expenses`
 
 ## 9. Validasi setelah setup
+
 Checklist minimum:
 1. Login admin berhasil.
 2. Registrasi customer berhasil.
