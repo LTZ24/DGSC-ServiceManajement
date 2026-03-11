@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../config/theme.dart';
 import '../services/cf_engine.dart';
+import '../services/diagnosis_config_service.dart';
 
 class DiagnosisDialog extends StatefulWidget {
   final void Function(
@@ -23,8 +24,22 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
   final Set<int> _selectedSymptomIds = {};
   List<CfResult> _results = [];
   bool _isLoading = false;
+  bool _isPreparing = true;
   final currencyFormat =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareDataset();
+  }
+
+  Future<void> _prepareDataset() async {
+    await DiagnosisConfigService.syncPublishedDataset();
+    if (mounted) {
+      setState(() => _isPreparing = false);
+    }
+  }
 
   List<CfCategory> get _categories => CfEngine.categories;
 
@@ -116,11 +131,13 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
               ),
             ),
             Expanded(
-              child: _isLoading
+              child: _isPreparing
+                  ? const Center(child: CircularProgressIndicator())
+                  : _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _buildStepContent(),
             ),
-            if (!_isLoading) _buildActions(),
+            if (!_isLoading && !_isPreparing) _buildActions(),
           ],
         ),
       ),

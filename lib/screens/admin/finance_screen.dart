@@ -1,9 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/theme.dart';
-import '../../services/firebase_db_service.dart';
+import '../../l10n/app_text.dart';
+import '../../services/backend_types.dart';
+import '../../services/backend_service.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/app_list_card.dart';
 import '../../widgets/status_badge.dart';
 
 class AdminFinanceScreen extends StatefulWidget {
@@ -13,16 +15,23 @@ class AdminFinanceScreen extends StatefulWidget {
 }
 
 class _AdminFinanceScreenState extends State<AdminFinanceScreen> {
+  late final Stream<QuerySnapshot> _transactionsStream;
   final currencyFormat =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
   @override
+  void initState() {
+    super.initState();
+    _transactionsStream = BackendService.transactionsStream();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Keuangan')),
+      appBar: AppBar(title: Text(context.tr('Keuangan', 'Finance'))),
       drawer: const AppDrawer(isAdmin: true),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseDbService.transactionsStream(),
+        stream: _transactionsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -30,7 +39,7 @@ class _AdminFinanceScreenState extends State<AdminFinanceScreen> {
           final docs = snapshot.data?.docs ?? [];
           double totalRevenue = 0, paidRevenue = 0, pendingRevenue = 0;
           for (final d in docs) {
-            final data = d.data() as Map<String, dynamic>;
+            final data = d.data();
             final amount = (data['amount'] as num? ?? 0).toDouble();
             totalRevenue += amount;
             if (data['payment_status'] == 'paid') {
@@ -40,7 +49,9 @@ class _AdminFinanceScreenState extends State<AdminFinanceScreen> {
             }
           }
           return RefreshIndicator(
-            onRefresh: () async => setState(() {}),
+            onRefresh: () async {
+              await Future<void>.delayed(const Duration(milliseconds: 250));
+            },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
@@ -48,7 +59,7 @@ class _AdminFinanceScreenState extends State<AdminFinanceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _RevenueCard(
-                    title: 'Total Pendapatan',
+                    title: context.tr('Total Pendapatan', 'Total Revenue'),
                     amount: currencyFormat.format(totalRevenue),
                     icon: Icons.account_balance_wallet,
                     color: AppTheme.primaryColor,
@@ -57,7 +68,7 @@ class _AdminFinanceScreenState extends State<AdminFinanceScreen> {
                   Row(children: [
                     Expanded(
                         child: _RevenueCard(
-                      title: 'Sudah Dibayar',
+                      title: context.tr('Sudah Dibayar', 'Paid'),
                       amount: currencyFormat.format(paidRevenue),
                       icon: Icons.check_circle,
                       color: AppTheme.successColor,
@@ -65,32 +76,35 @@ class _AdminFinanceScreenState extends State<AdminFinanceScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                         child: _RevenueCard(
-                      title: 'Belum Dibayar',
+                      title: context.tr('Belum Dibayar', 'Unpaid'),
                       amount: currencyFormat.format(pendingRevenue),
                       icon: Icons.pending,
                       color: AppTheme.warningColor,
                     )),
                   ]),
                   const SizedBox(height: 24),
-                  Text('Riwayat Transaksi',
+                    Text(context.tr('Riwayat Transaksi', 'Transaction History'),
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   if (docs.isEmpty)
-                    const Center(
-                        child: Text('Belum ada transaksi',
-                            style: TextStyle(color: Colors.grey)))
+                    Center(
+                      child: Text(context.tr('Belum ada transaksi', 'No transactions yet'),
+                            style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant)))
                   else
                     ...docs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
+                      final data = doc.data();
                       final ts = data['transaction_date'];
                       String dateStr = '-';
                       if (ts is Timestamp) {
                         dateStr = DateFormat('dd MMM yyyy').format(ts.toDate());
                       }
-                      return Card(
+                      return AppListCard(
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: CircleAvatar(
@@ -102,8 +116,8 @@ class _AdminFinanceScreenState extends State<AdminFinanceScreen> {
                           title: Text(
                               currencyFormat.format(
                                   (data['amount'] as num? ?? 0).toDouble()),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold)),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text(
                               '${data["payment_method"] ?? "-"} | $dateStr'),
                           trailing: StatusBadge(
@@ -134,7 +148,8 @@ class _RevenueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return AppListCard(
+      margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(children: [
@@ -148,13 +163,12 @@ class _RevenueCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(title,
-                  style: const TextStyle(
-                      fontSize: 12, color: Colors.grey)),
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
               Text(amount,
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: color)),
+                      fontWeight: FontWeight.bold, fontSize: 15, color: color)),
             ],
           )),
         ]),
@@ -162,3 +176,4 @@ class _RevenueCard extends StatelessWidget {
     );
   }
 }
+

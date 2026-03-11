@@ -1,0 +1,47 @@
+[
+  {
+    "id_aplikasi": "app_mpstore",
+    "nama_aplikasi": "MPstore",
+    "jenis_layanan": "Agen PPOB & Grosir"
+  },
+  {
+    "id_aplikasi": "app_bukuagen",
+    "nama_aplikasi": "BukuAgen",
+    "jenis_layanan": "Agen PPOB"
+  },
+  {
+    "id_aplikasi": "app_mitrashopee",
+    "nama_aplikasi": "Mitra Shopee",
+    "jenis_layanan": "Mitra E-Commerce & PPOB"
+  },
+  {
+    "id_aplikasi": "app_mitrabukalapak",
+    "nama_aplikasi": "Mitra Bukalapak",
+    "jenis_layanan": "Mitra E-Commerce & PPOB"
+  },
+  {
+    "id_aplikasi": "app_belanjakuota",
+    "nama_aplikasi": "BelanjaKuota",
+    "jenis_layanan": "Agen Pulsa & Kuota"
+  },
+  {
+    "id_aplikasi": "app_speedcash",
+    "nama_aplikasi": "SpeedCash",
+    "jenis_layanan": "E-Money & PPOB"
+  },
+  {
+    "id_aplikasi": "app_bisatopup",
+    "nama_aplikasi": "BisaTopup",
+    "jenis_layanan": "Agen Topup Game & PPOB"
+  },
+  {
+    "id_aplikasi": "app_gopay",
+    "nama_aplikasi": "Gopay",
+    "jenis_layanan": "E-Wallet"
+  },
+  {
+    "id_aplikasi": "app_brimo",
+    "nama_aplikasi": "BRI Mobile",
+    "jenis_layanan": "Mobile Banking"
+  }
+]

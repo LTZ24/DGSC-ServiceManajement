@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
+import '../l10n/app_text.dart';
 
 class StatusBadge extends StatelessWidget {
   final String status;
@@ -17,34 +18,59 @@ class StatusBadge extends StatelessWidget {
       case 'pending':
         bgColor = AppTheme.warningColor.withValues(alpha: 0.15);
         textColor = Colors.orange.shade800;
-        label = 'Menunggu';
+        label = context.tr('Menunggu', 'Pending');
+        break;
+      case 'approved':
+        bgColor = AppTheme.infoColor.withValues(alpha: 0.15);
+        textColor = AppTheme.infoColor;
+        label = context.tr('Disetujui', 'Approved');
+        break;
+      case 'rejected':
+        bgColor = AppTheme.dangerColor.withValues(alpha: 0.15);
+        textColor = AppTheme.dangerColor;
+        label = context.tr('Ditolak', 'Rejected');
+        break;
+      case 'converted':
+        bgColor = AppTheme.primaryColor.withValues(alpha: 0.15);
+        textColor = AppTheme.primaryColor;
+        label = context.tr('Jadi Servis', 'Converted');
         break;
       case 'processed':
       case 'in_progress':
         bgColor = AppTheme.infoColor.withValues(alpha: 0.15);
         textColor = AppTheme.infoColor;
-        label = status == 'in_progress' ? 'Dikerjakan' : 'Diproses';
+        label = context.tr('Diproses', 'In Progress');
         break;
       case 'completed':
       case 'selesai':
         bgColor = AppTheme.successColor.withValues(alpha: 0.15);
         textColor = Colors.green.shade800;
-        label = 'Selesai';
+        label = context.tr('Selesai', 'Completed');
         break;
       case 'sudah_diambil':
         bgColor = AppTheme.primaryColor.withValues(alpha: 0.15);
         textColor = AppTheme.primaryColor;
-        label = 'Sudah Diambil';
+        label = context.tr('Sudah Diambil', 'Picked Up');
         break;
       case 'cancelled':
         bgColor = AppTheme.dangerColor.withValues(alpha: 0.15);
         textColor = AppTheme.dangerColor;
-        label = 'Dibatalkan';
+        label = context.tr('Dibatalkan', 'Cancelled');
+        break;
+      case 'failed':
+        bgColor = AppTheme.dangerColor.withValues(alpha: 0.15);
+        textColor = AppTheme.dangerColor;
+        label = context.tr('Gagal', 'Failed');
+        break;
+      case 'awaiting_confirmation':
+        bgColor = AppTheme.infoColor.withValues(alpha: 0.15);
+        textColor = AppTheme.infoColor;
+        label = context.tr('Menunggu Konfirmasi', 'Awaiting Confirmation');
         break;
       case 'paid':
         bgColor = AppTheme.successColor.withValues(alpha: 0.15);
         textColor = Colors.green.shade800;
-        label = 'Lunas';
+        label = context.tr('Lunas', 'Paid');
         break;
       default:
         bgColor = Colors.grey.withValues(alpha: 0.15);

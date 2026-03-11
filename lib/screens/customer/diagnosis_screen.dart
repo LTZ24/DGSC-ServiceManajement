@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../config/theme.dart';
+import '../../l10n/app_text.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/diagnosis_dialog.dart';
 
@@ -7,9 +9,15 @@ class DiagnosisScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final routeName = ModalRoute.of(context)?.settings.name;
+    final isGuest = routeName == '/diagnosis';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final subtitleColor =
+        isDark ? AppTheme.darkMutedText : const Color(0xFF667085);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Diagnosis Kerusakan')),
-      drawer: const AppDrawer(isAdmin: false),
+      appBar: AppBar(title: Text(context.tr('Diagnosis Kerusakan', 'Damage Diagnosis'))),
+      drawer: AppDrawer(isAdmin: false, isGuest: isGuest),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -23,16 +31,16 @@ class DiagnosisScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Diagnosis Kerusakan',
+                context.tr('Diagnosis Kerusakan', 'Damage Diagnosis'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Gunakan sistem pakar Certainty Factor untuk mendiagnosis kerusakan perangkat Anda secara otomatis.',
+              Text(
+                context.tr('Gunakan sistem pakar Certainty Factor untuk mendiagnosis kerusakan perangkat Anda secara otomatis.', 'Use the Certainty Factor expert system to diagnose your device problems automatically.'),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: subtitleColor),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -46,8 +54,9 @@ class DiagnosisScreen extends StatelessWidget {
                         onResultSelected: (results, category, symptoms) {
                           // Optionally navigate to booking with results
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Diagnosis selesai! Anda dapat menggunakan hasil ini saat booking.'),
+                            SnackBar(
+                              content: Text(
+                                  context.tr('Diagnosis selesai! Anda dapat menggunakan hasil ini saat booking.', 'Diagnosis complete! You can use this result when booking.')),
                             ),
                           );
                         },
@@ -55,7 +64,7 @@ class DiagnosisScreen extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.search),
-                  label: const Text('Mulai Diagnosis'),
+                  label: Text(context.tr('Mulai Diagnosis', 'Start Diagnosis')),
                 ),
               ),
             ],

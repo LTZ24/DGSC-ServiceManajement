@@ -1,9 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/theme.dart';
-import '../../services/firebase_db_service.dart';
+import '../../l10n/app_text.dart';
+import '../../services/backend_types.dart';
+import '../../services/backend_service.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/app_list_card.dart';
 
 class AdminSparePartsScreen extends StatefulWidget {
   const AdminSparePartsScreen({super.key});
@@ -14,8 +16,15 @@ class AdminSparePartsScreen extends StatefulWidget {
 class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
   bool _showLowStock = false;
   final _searchCtrl = TextEditingController();
+  late final Stream<QuerySnapshot> _sparePartsStream;
   final currencyFormat =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _sparePartsStream = BackendService.sparePartsStream();
+  }
 
   @override
   void dispose() {
@@ -24,14 +33,17 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
   }
 
   void _showCreateEditDialog(BuildContext context, {DocumentSnapshot? doc}) {
-    final data = doc != null ? doc.data() as Map<String, dynamic> : null;
+    final data = doc != null ? doc.data() : null;
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController(text: data?['part_name'] ?? '');
     final categoryCtrl = TextEditingController(text: data?['category'] ?? '');
-    final stockCtrl = TextEditingController(text: (data?['stock_quantity'] ?? 0).toString());
-    final priceCtrl = TextEditingController(text: (data?['unit_price'] ?? 0).toString());
+    final stockCtrl =
+        TextEditingController(text: (data?['stock_quantity'] ?? 0).toString());
+    final priceCtrl =
+        TextEditingController(text: (data?['unit_price'] ?? 0).toString());
     final supplierCtrl = TextEditingController(text: data?['supplier'] ?? '');
-    final minStockCtrl = TextEditingController(text: (data?['minimum_stock'] ?? 5).toString());
+    final minStockCtrl =
+        TextEditingController(text: (data?['minimum_stock'] ?? 5).toString());
 
     showModalBottomSheet(
       context: context,
@@ -41,7 +53,9 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            top: 20, left: 20, right: 20),
+            top: 20,
+            left: 20,
+            right: 20),
         child: SingleChildScrollView(
           child: Form(
             key: formKey,
@@ -49,32 +63,48 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(doc != null ? 'Edit Spare Part' : 'Tambah Spare Part',
-                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                Text(doc != null
+                    ? context.tr('Edit Spare Part', 'Edit Spare Part')
+                    : context.tr('Tambah Spare Part', 'Add Spare Part'),
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                TextFormField(controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Nama Part'),
-                    validator: (v) => v?.isEmpty == true ? 'Wajib' : null),
+                TextFormField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(labelText: context.tr('Nama Part', 'Part Name')),
+                    validator: (v) => v?.isEmpty == true ? context.tr('Wajib', 'Required') : null),
                 const SizedBox(height: 12),
-                TextFormField(controller: categoryCtrl,
-                    decoration: const InputDecoration(labelText: 'Kategori')),
+                TextFormField(
+                    controller: categoryCtrl,
+                    decoration: InputDecoration(labelText: context.tr('Kategori', 'Category'))),
                 const SizedBox(height: 12),
                 Row(children: [
-                  Expanded(child: TextFormField(controller: stockCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Stok'))),
+                  Expanded(
+                      child: TextFormField(
+                          controller: stockCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration:
+                              InputDecoration(labelText: context.tr('Stok', 'Stock')))),
                   const SizedBox(width: 12),
-                  Expanded(child: TextFormField(controller: minStockCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Min Stok'))),
+                  Expanded(
+                      child: TextFormField(
+                          controller: minStockCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration:
+                              InputDecoration(labelText: context.tr('Min Stok', 'Min Stock')))),
                 ]),
                 const SizedBox(height: 12),
-                TextFormField(controller: priceCtrl,
+                TextFormField(
+                    controller: priceCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Harga Satuan', prefixText: 'Rp ')),
+                    decoration: InputDecoration(
+                      labelText: context.tr('Harga Satuan', 'Unit Price'), prefixText: 'Rp ')),
                 const SizedBox(height: 12),
-                TextFormField(controller: supplierCtrl,
-                    decoration: const InputDecoration(labelText: 'Supplier')),
+                TextFormField(
+                    controller: supplierCtrl,
+                    decoration: InputDecoration(labelText: context.tr('Supplier', 'Supplier'))),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
@@ -88,17 +118,18 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
                       'minimum_stock': int.tryParse(minStockCtrl.text) ?? 5,
                     };
                     if (doc != null) {
-                      await FirebaseDbService.updateSparePart(doc.id, partData);
+                      await BackendService.updateSparePart(doc.id, partData);
                     } else {
-                      await FirebaseDbService.addSparePart(partData);
+                      await BackendService.addSparePart(partData);
                     }
                     if (ctx.mounted) {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                          content: Text(doc != null ? 'Diperbarui' : 'Ditambahkan')));
+                          content: Text(
+                              doc != null ? context.tr('Diperbarui', 'Updated') : context.tr('Ditambahkan', 'Added'))));
                     }
                   },
-                  child: const Text('Simpan'),
+                  child: Text(context.tr('Simpan', 'Save')),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -113,12 +144,12 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Spare Part'),
+        title: Text(context.tr('Spare Part', 'Spare Parts')),
         actions: [
           IconButton(
             icon: Icon(_showLowStock ? Icons.warning : Icons.warning_outlined,
                 color: _showLowStock ? Colors.yellow : Colors.white),
-            tooltip: 'Stok Menipis',
+            tooltip: context.tr('Stok Menipis', 'Low Stock'),
             onPressed: () => setState(() => _showLowStock = !_showLowStock),
           ),
         ],
@@ -129,7 +160,7 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseDbService.sparePartsStream(),
+        stream: _sparePartsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -137,7 +168,7 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
           var docs = snapshot.data?.docs ?? [];
           if (_showLowStock) {
             docs = docs.where((d) {
-              final data = d.data() as Map<String, dynamic>;
+              final data = d.data();
               return (data['stock_quantity'] as int? ?? 0) <
                   (data['minimum_stock'] as int? ?? 5);
             }).toList();
@@ -145,9 +176,15 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
           final query = _searchCtrl.text.toLowerCase();
           if (query.isNotEmpty) {
             docs = docs.where((d) {
-              final data = d.data() as Map<String, dynamic>;
-              return (data['part_name'] ?? '').toString().toLowerCase().contains(query) ||
-                  (data['category'] ?? '').toString().toLowerCase().contains(query);
+              final data = d.data();
+              return (data['part_name'] ?? '')
+                      .toString()
+                      .toLowerCase()
+                      .contains(query) ||
+                  (data['category'] ?? '')
+                      .toString()
+                      .toLowerCase()
+                      .contains(query);
             }).toList();
           }
           return Column(children: [
@@ -156,31 +193,32 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
               child: TextField(
                 controller: _searchCtrl,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                    hintText: 'Cari nama, kategori...',
-                    prefixIcon: Icon(Icons.search)),
+                decoration: InputDecoration(
+                  hintText: context.tr('Cari nama, kategori...', 'Search name, category...'),
+                  prefixIcon: const Icon(Icons.search)),
               ),
             ),
             Expanded(
               child: docs.isEmpty
-                  ? const Center(
-                      child: Text('Tidak ada spare part',
-                          style: TextStyle(color: Colors.grey)))
+                  ? Center(
+                    child: Text(context.tr('Tidak ada spare part', 'No spare parts'),
+                      style: const TextStyle(color: Colors.grey)))
                   : ListView.builder(
                       padding: const EdgeInsets.all(12),
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
                         final doc = docs[index];
-                        final data = doc.data() as Map<String, dynamic>;
+                        final data = doc.data();
                         final stock = data['stock_quantity'] as int? ?? 0;
                         final minStock = data['minimum_stock'] as int? ?? 5;
-                        return Card(
+                        return AppListCard(
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: stock < minStock
                                   ? AppTheme.dangerColor.withValues(alpha: 0.15)
-                                  : AppTheme.successColor.withValues(alpha: 0.15),
+                                  : AppTheme.successColor
+                                      .withValues(alpha: 0.15),
                               child: Text('$stock',
                                   style: TextStyle(
                                       color: stock < minStock
@@ -189,19 +227,22 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
                                       fontWeight: FontWeight.bold)),
                             ),
                             title: Text(data['part_name'] ?? '',
-                                style: const TextStyle(fontWeight: FontWeight.w600)),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
                             subtitle: Text(
                                 '${data["category"] ?? "-"} | ${currencyFormat.format((data["unit_price"] as num? ?? 0).toDouble())}'),
-                            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                            trailing:
+                                Row(mainAxisSize: MainAxisSize.min, children: [
                               IconButton(
                                 icon: const Icon(Icons.edit, size: 20),
-                                onPressed: () => _showCreateEditDialog(context, doc: doc),
+                                onPressed: () =>
+                                    _showCreateEditDialog(context, doc: doc),
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline,
                                     color: AppTheme.dangerColor, size: 20),
                                 onPressed: () =>
-                                    FirebaseDbService.deleteSparePart(doc.id),
+                                    BackendService.deleteSparePart(doc.id),
                               ),
                             ]),
                           ),
@@ -215,3 +256,4 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
     );
   }
 }
+

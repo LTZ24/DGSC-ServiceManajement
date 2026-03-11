@@ -1,0 +1,205 @@
+[
+  {
+    "id_kategori": "pulsa_data",
+    "nama_kategori": "Pulsa, Data & Seluler",
+    "tipe_transaksi": "prabayar",
+    "layanan": [
+      { "id_layanan": "pls_telkomsel", "nama": "Pulsa Telkomsel" },
+      { "id_layanan": "pls_indosat", "nama": "Pulsa Indosat" },
+      { "id_layanan": "pls_xl", "nama": "Pulsa XL" },
+      { "id_layanan": "pls_axis", "nama": "Pulsa Axis" },
+      { "id_layanan": "pls_smartfren", "nama": "Pulsa Smartfren" },
+      { "id_layanan": "pls_tri", "nama": "Pulsa Tri" },
+      { "id_layanan": "pls_byu", "nama": "Pulsa By.U" },
+      { "id_layanan": "pkt_data", "nama": "Paket Data / Kuota All Operator" },
+      { "id_layanan": "pkt_telepon", "nama": "Paket Nelpon & SMS" },
+      { "id_layanan": "masa_aktif", "nama": "Perpanjang Masa Aktif" },
+      { "id_layanan": "roaming", "nama": "Paket Roaming Internasional" },
+      { "id_layanan": "vcr_kosong", "nama": "Injeksi Voucher Kosong / KPK" }
+    ]
+  },
+  {
+    "id_kategori": "ewallet_emoney",
+    "nama_kategori": "E-Wallet & E-Money",
+    "tipe_transaksi": "prabayar",
+    "layanan": [
+      { "id_layanan": "ew_dana", "nama": "DANA" },
+      { "id_layanan": "ew_ovo", "nama": "OVO" },
+      { "id_layanan": "ew_gopay_p", "nama": "GoPay Penumpang" },
+      { "id_layanan": "ew_gopay_d", "nama": "GoPay Driver" },
+      { "id_layanan": "ew_shopeepay", "nama": "ShopeePay" },
+      { "id_layanan": "ew_linkaja", "nama": "LinkAja" },
+      { "id_layanan": "ew_maxim", "nama": "Maxim Customer & Driver" },
+      { "id_layanan": "ew_grab", "nama": "GrabPay" },
+      { "id_layanan": "ew_isaku", "nama": "i.Saku" },
+      { "id_layanan": "ew_astrapay", "nama": "AstraPay" },
+      { "id_layanan": "ew_sakuku", "nama": "BCA Sakuku" },
+      { "id_layanan": "ew_doku", "nama": "Doku Wallet" },
+      { "id_layanan": "em_etoll", "nama": "Mandiri E-Toll" },
+      { "id_layanan": "em_brizzi", "nama": "BRI Brizzi" },
+      { "id_layanan": "em_flazz", "nama": "BCA Flazz" },
+      { "id_layanan": "em_tapcash", "nama": "BNI TapCash" },
+      { "id_layanan": "em_jakcard", "nama": "DKI JakCard" }
+    ]
+  },
+  {
+    "id_kategori": "game_hiburan",
+    "nama_kategori": "Voucher Game & Hiburan",
+    "tipe_transaksi": "prabayar",
+    "layanan": [
+      { "id_layanan": "gm_ff", "nama": "Free Fire (Diamonds/Member)" },
+      { "id_layanan": "gm_mlbb", "nama": "Mobile Legends (Diamonds/Starlight)" },
+      { "id_layanan": "gm_pubg", "nama": "PUBG Mobile (UC)" },
+      { "id_layanan": "gm_valo", "nama": "Valorant Points" },
+      { "id_layanan": "gm_genshin", "nama": "Genshin Impact (Genesis Crystal)" },
+      { "id_layanan": "gm_codm", "nama": "Call of Duty Mobile (CP)" },
+      { "id_layanan": "gm_roblox", "nama": "Roblox" },
+      { "id_layanan": "gm_steam", "nama": "Steam Wallet Code" },
+      { "id_layanan": "gm_gplay", "nama": "Google Play Voucher" },
+      { "id_layanan": "gm_psn", "nama": "PlayStation Network (PSN)" },
+      { "id_layanan": "gm_garena", "nama": "Garena Shells" },
+      { "id_layanan": "gm_megaxus", "nama": "Megaxus MI-Cash" },
+      { "id_layanan": "hb_netflix", "nama": "Netflix" },
+      { "id_layanan": "hb_spotify", "nama": "Spotify Premium" },
+      { "id_layanan": "hb_vidio", "nama": "Vidio Premier" },
+      { "id_layanan": "hb_viu", "nama": "Viu Premium" },
+      { "id_layanan": "hb_wetv", "nama": "WeTV VIP" },
+      { "id_layanan": "hb_disney", "nama": "Disney+ Hotstar" },
+      { "id_layanan": "hb_ytprem", "nama": "YouTube Premium" },
+      { "id_layanan": "hb_canva", "nama": "Canva Pro" },
+      { "id_layanan": "tv_kvision", "nama": "K-Vision / Garmedia" },
+      { "id_layanan": "tv_nex", "nama": "Nex Parabola" }
+    ]
+  },
+  {
+    "id_kategori": "tagihan_utilitas",
+    "nama_kategori": "Tagihan Utilitas",
+    "tipe_transaksi": "pascabayar",
+    "layanan": [
+      { "id_layanan": "ut_pln_token", "nama": "Token Listrik (Prabayar)", "tipe_override": "prabayar" },
+      { "id_layanan": "ut_pln_pasca", "nama": "Tagihan PLN (Pascabayar)" },
+      { "id_layanan": "ut_pln_nontaglis", "nama": "PLN Non-Taglis (Tambah Daya/Pasang)" },
+      { "id_layanan": "ut_pdam", "nama": "PDAM (Cek Berdasarkan Wilayah/Kabupaten)" },
+      { "id_layanan": "ut_pgn", "nama": "PGN (Perusahaan Gas Negara)" },
+      { "id_layanan": "ut_pertagas", "nama": "Pertagas" }
+    ]
+  },
+  {
+    "id_kategori": "telekomunikasi_pasca",
+    "nama_kategori": "Internet & Pascabayar",
+    "tipe_transaksi": "pascabayar",
+    "layanan": [
+      { "id_layanan": "tk_indihome", "nama": "Telkom / IndiHome" },
+      { "id_layanan": "tk_biznet", "nama": "Biznet Home" },
+      { "id_layanan": "tk_myrep", "nama": "MyRepublic" },
+      { "id_layanan": "tk_firstmedia", "nama": "First Media" },
+      { "id_layanan": "tk_mnc", "nama": "MNC Play" },
+      { "id_layanan": "tk_cbn", "nama": "CBN Internet" },
+      { "id_layanan": "tk_halo", "nama": "Telkomsel Halo" },
+      { "id_layanan": "tk_im3pasca", "nama": "Indosat IM3 Postpaid" },
+      { "id_layanan": "tk_xlprio", "nama": "XL Prioritas" },
+      { "id_layanan": "tk_smartpasca", "nama": "Smartfren Pascabayar" },
+      { "id_layanan": "tk_tripasca", "nama": "Tri Pascabayar" }
+    ]
+  },
+  {
+    "id_kategori": "multifinance",
+    "nama_kategori": "Cicilan & Multifinance",
+    "tipe_transaksi": "pascabayar",
+    "layanan": [
+      { "id_layanan": "kc_fif", "nama": "FIF Finance" },
+      { "id_layanan": "kc_adira", "nama": "Adira Finance" },
+      { "id_layanan": "kc_baf", "nama": "BAF (Bussan Auto Finance)" },
+      { "id_layanan": "kc_wom", "nama": "WOM Finance" },
+      { "id_layanan": "kc_homecredit", "nama": "Home Credit Indonesia" },
+      { "id_layanan": "kc_oto", "nama": "OTO Finance / OTO Kredit Motor" },
+      { "id_layanan": "kc_maf", "nama": "Mega Auto Finance (MAF)" },
+      { "id_layanan": "kc_mcf", "nama": "Mega Central Finance (MCF)" },
+      { "id_layanan": "kc_bfi", "nama": "BFI Finance" },
+      { "id_layanan": "kc_aeon", "nama": "AEON Credit Service" },
+      { "id_layanan": "kc_kreditplus", "nama": "Kredit Plus / Finansia" },
+      { "id_layanan": "kc_mtf", "nama": "Mandiri Tunas Finance" },
+      { "id_layanan": "kc_suzuki", "nama": "Suzuki Finance" },
+      { "id_layanan": "kc_clipan", "nama": "Clipan Finance" }
+    ]
+  },
+  {
+    "id_kategori": "asuransi_bpjs",
+    "nama_kategori": "BPJS & Asuransi",
+    "tipe_transaksi": "pascabayar",
+    "layanan": [
+      { "id_layanan": "as_bpjs_kes", "nama": "BPJS Kesehatan" },
+      { "id_layanan": "as_bpjs_tk", "nama": "BPJS Ketenagakerjaan" },
+      { "id_layanan": "as_dplk", "nama": "DPLK BPJS Ketenagakerjaan" },
+      { "id_layanan": "as_car", "nama": "CAR Life Insurance" },
+      { "id_layanan": "as_jiwasraya", "nama": "Jiwasraya" },
+      { "id_layanan": "as_tokiomarine", "nama": "Tokio Marine" }
+    ]
+  },
+  {
+    "id_kategori": "pajak_negara",
+    "nama_kategori": "Pajak & Penerimaan Negara",
+    "tipe_transaksi": "pascabayar",
+    "layanan": [
+      { "id_layanan": "pj_pbb", "nama": "PBB (Pajak Bumi & Bangunan)" },
+      { "id_layanan": "pj_esamsat", "nama": "E-Samsat (Pajak Kendaraan)" },
+      { "id_layanan": "pj_mpn", "nama": "Penerimaan Negara (MPN/PNBP - Tilang, KUA, dll)" },
+      { "id_layanan": "pj_djp", "nama": "Pajak Online (DJP)" },
+      { "id_layanan": "pj_beacukai", "nama": "Bea Cukai" },
+      { "id_layanan": "pj_paspor", "nama": "Pembuatan/Perpanjang Paspor (Imigrasi)" }
+    ]
+  },
+  {
+    "id_kategori": "pendidikan_donasi",
+    "nama_kategori": "Pendidikan, Zakat & Donasi",
+    "tipe_transaksi": "pascabayar",
+    "layanan": [
+      { "id_layanan": "pd_kampus", "nama": "SPP Universitas / Kampus" },
+      { "id_layanan": "pd_sekolah", "nama": "SPP Sekolah (Jaringan IDN/Lainnya)" },
+      { "id_layanan": "dn_baznas", "nama": "BAZNAS (Zakat/Infaq)" },
+      { "id_layanan": "dn_dompetdhuafa", "nama": "Dompet Dhuafa" },
+      { "id_layanan": "dn_rumahzakat", "nama": "Rumah Zakat" },
+      { "id_layanan": "dn_lazismu", "nama": "LAZISMU" },
+      { "id_layanan": "dn_lazisnu", "nama": "LAZISNU" }
+    ]
+  },
+  {
+    "id_kategori": "ecommerce_va",
+    "nama_kategori": "E-Commerce & Virtual Account",
+    "tipe_transaksi": "pembayaran_kode",
+    "layanan": [
+      { "id_layanan": "va_tokopedia", "nama": "Pembayaran Tokopedia" },
+      { "id_layanan": "va_shopee", "nama": "Pembayaran Shopee" },
+      { "id_layanan": "va_lazada", "nama": "Pembayaran Lazada" },
+      { "id_layanan": "va_bukalapak", "nama": "Pembayaran Bukalapak" },
+      { "id_layanan": "va_blibli", "nama": "Pembayaran Blibli" },
+      { "id_layanan": "va_tiketcom", "nama": "Pembayaran Tiket.com" },
+      { "id_layanan": "va_traveloka", "nama": "Pembayaran Traveloka" }
+    ]
+  },
+  {
+    "id_kategori": "tiket_travel",
+    "nama_kategori": "Tiket & Travel",
+    "tipe_transaksi": "pemesanan",
+    "layanan": [
+      { "id_layanan": "tk_kai", "nama": "Tiket Kereta Api (KAI)" },
+      { "id_layanan": "tk_pesawat", "nama": "Tiket Pesawat Domestik" },
+      { "id_layanan": "tk_pesawat_int", "nama": "Tiket Pesawat Internasional" },
+      { "id_layanan": "tk_bus", "nama": "Tiket Bus AKAP & Travel" },
+      { "id_layanan": "tk_pelni", "nama": "Tiket Kapal Laut (PELNI)" },
+      { "id_layanan": "tk_hotel", "nama": "Pemesanan Hotel" }
+    ]
+  },
+  {
+    "id_kategori": "layanan_finansial",
+    "nama_kategori": "Layanan Bank & Agen",
+    "tipe_transaksi": "transaksi_agen",
+    "layanan": [
+      { "id_layanan": "ba_transfer", "nama": "Transfer Antar Bank (BI-Fast/Online)" },
+      { "id_layanan": "ba_tarik_ewallet", "nama": "Tarik Tunai E-Wallet" },
+      { "id_layanan": "ba_tarik_bank", "nama": "Tarik Tunai Kartu Debit/Rekening" },
+      { "id_layanan": "ba_setor_tunai", "nama": "Setor Tunai ke Rekening" },
+      { "id_layanan": "ba_qris", "nama": "Cetak/Bayar via QRIS Statis Agen" }
+    ]
+  }
+]

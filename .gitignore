@@ -70,6 +70,18 @@ google-services.json
 **/google-services.json
 GoogleService-Info.plist
 **/GoogleService-Info.plist
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+**/*-service-account.json
+**/*service-account*.json
+**/*firebase-adminsdk*.json
+supabase/.temp/
+supabase/functions/.env
+supabase/functions/.env.*
+*.json.enc
+*.secret.json
+secrets.json
+credentials.json
 
 # Firebase options (auto-generated, contains API keys)
 lib/firebase_options.dart
@@ -96,12 +108,21 @@ key.properties
 service-account*.json
 serviceaccount*.json
 *-firebase-adminsdk-*.json
+firebase-credentials*.json
+supabase-service-role*.json
+supabase-keys*.json
+**/service-account.json
+**/service-account-*.json
+**/*secrets*.json
+**/*credentials*.json
+**/*private*.json
 
 # ============================================================
 # Build & CI log artifacts
 # ============================================================
 apk_build2_log.txt
 apk_log.txt
+build_apk_release.log
 build_log.txt
 build_log2.txt
 build_log3.txt
@@ -112,6 +133,8 @@ final_build_log.txt
 jdk_download_log.txt
 proc_check.txt
 proc2.txt
+flutter_cmd.txt
+flutter_cmd_status.txt
 check2.bat
 check_proc.bat
 check_env.bat

@@ -11,23 +11,28 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # State Management
   provider: ^6.1.1
 
   # HTTP & Networking
-  http: ^1.2.0
   shared_preferences: ^2.2.2
 
-  # Firebase (Spark plan — free, no Storage needed)
-  firebase_core: ^4.5.0
-  firebase_auth: ^6.2.0
-  cloud_firestore: ^6.1.3
+  # Supabase (PostgreSQL + Auth)
+  supabase_flutter: ^2.8.4
+  firebase_core: ^3.15.2
+  firebase_messaging: ^15.2.7
+  flutter_local_notifications: ^19.4.0
+  google_sign_in: ^6.2.2
 
   # Local file storage (foto profil & receipt — tidak perlu cloud)
   image_picker: ^1.1.2
   path_provider: ^2.1.4
   path: ^1.9.0
+  image: ^4.5.4
+  share_plus: ^11.1.0
 
   # UI Components
   cupertino_icons: ^1.0.6
@@ -36,6 +41,8 @@ dependencies:
   intl: ^0.20.2
   shimmer: ^3.0.0
   permission_handler: ^12.0.1
+  url_launcher: ^6.3.2
+  blue_thermal_helper: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -57,3 +64,4 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/data/

@@ -14,11 +14,35 @@
 // Usage:
 //   final results = CfEngine.diagnose(categoryId: 1, selectedSymptomIds: [6, 8, 10]);
 
+int _cfInt(dynamic value, {int fallback = 0}) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+double _cfDouble(dynamic value, {double fallback = 0}) {
+  if (value is double) return value;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
 class CfCategory {
   final int id;
   final String name;
   final String description;
   const CfCategory(this.id, this.name, this.description);
+
+  factory CfCategory.fromMap(Map<String, dynamic> map) => CfCategory(
+        _cfInt(map['id']),
+        map['name']?.toString() ?? '',
+        map['description']?.toString() ?? '',
+      );
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'name': name,
+        'description': description,
+      };
 }
 
 class CfSymptom {
@@ -29,6 +53,22 @@ class CfSymptom {
   final String? description;
   const CfSymptom(this.id, this.categoryId, this.code, this.name,
       [this.description]);
+
+  factory CfSymptom.fromMap(Map<String, dynamic> map) => CfSymptom(
+        _cfInt(map['id']),
+        _cfInt(map['category_id'] ?? map['categoryId']),
+        map['code']?.toString() ?? '',
+        map['name']?.toString() ?? '',
+        map['description']?.toString(),
+      );
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'category_id': categoryId,
+        'code': code,
+        'name': name,
+        'description': description,
+      };
 }
 
 class CfDamage {
@@ -45,6 +85,30 @@ class CfDamage {
       this.solution,
       this.estimatedCost,
       this.estimatedTime]);
+
+  factory CfDamage.fromMap(Map<String, dynamic> map) => CfDamage(
+        _cfInt(map['id']),
+        _cfInt(map['category_id'] ?? map['categoryId']),
+        map['code']?.toString() ?? '',
+        map['name']?.toString() ?? '',
+        map['description']?.toString(),
+        map['solution']?.toString(),
+        map['estimated_cost'] == null
+            ? null
+            : _cfDouble(map['estimated_cost']),
+        map['estimated_time']?.toString(),
+      );
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'category_id': categoryId,
+        'code': code,
+        'name': name,
+        'description': description,
+        'solution': solution,
+        'estimated_cost': estimatedCost,
+        'estimated_time': estimatedTime,
+      };
 }
 
 class CfRule {
@@ -52,6 +116,18 @@ class CfRule {
   final int damageId;
   final double cfValue;
   const CfRule(this.symptomId, this.damageId, this.cfValue);
+
+  factory CfRule.fromMap(Map<String, dynamic> map) => CfRule(
+        _cfInt(map['symptom_id'] ?? map['symptomId']),
+        _cfInt(map['damage_id'] ?? map['damageId']),
+        _cfDouble(map['cf_value'] ?? map['cfValue']),
+      );
+
+  Map<String, dynamic> toMap() => {
+        'symptom_id': symptomId,
+        'damage_id': damageId,
+        'cf_value': cfValue,
+      };
 }
 
 /// Result of a single damage after CF combination
@@ -83,14 +159,97 @@ class CfResult {
 }
 
 class CfEngine {
+  static List<CfCategory>? _runtimeCategories;
+  static List<CfSymptom>? _runtimeSymptoms;
+  static List<CfDamage>? _runtimeDamages;
+  static List<CfRule>? _runtimeRules;
+  static int _datasetVersion = 1;
+  static String? _datasetPublishedAtIso;
+
   // ═══════════════════════════════════════════════════════════════════════════
   // DATA — Categories
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static const List<CfCategory> categories = [
+  static const List<CfCategory> _defaultCategories = [
     CfCategory(1, 'Handphone', 'Diagnosa kerusakan handphone/smartphone'),
     CfCategory(2, 'Laptop', 'Diagnosa kerusakan laptop/notebook'),
   ];
+
+  static List<CfCategory> get categories =>
+      List.unmodifiable(_runtimeCategories ?? _defaultCategories);
+
+  static List<CfSymptom> get symptoms =>
+      List.unmodifiable(_runtimeSymptoms ?? _defaultSymptoms);
+
+  static List<CfDamage> get damages =>
+      List.unmodifiable(_runtimeDamages ?? _defaultDamages);
+
+  static List<CfRule> get rules =>
+      List.unmodifiable(_runtimeRules ?? _defaultRules);
+
+  static int get datasetVersion => _datasetVersion;
+
+  static String? get datasetPublishedAtIso => _datasetPublishedAtIso;
+
+  static void resetToDefaults() {
+    _runtimeCategories = null;
+    _runtimeSymptoms = null;
+    _runtimeDamages = null;
+    _runtimeRules = null;
+    _datasetVersion = 1;
+    _datasetPublishedAtIso = null;
+  }
+
+  static void loadDatasetMap(
+    Map<String, dynamic> map, {
+    int? version,
+    String? publishedAtIso,
+  }) {
+    _runtimeCategories = ((map['categories'] as List?) ?? const [])
+        .map((item) => CfCategory.fromMap(Map<String, dynamic>.from(item as Map)))
+        .toList();
+    _runtimeSymptoms = ((map['symptoms'] as List?) ?? const [])
+        .map((item) => CfSymptom.fromMap(Map<String, dynamic>.from(item as Map)))
+        .toList();
+    _runtimeDamages = ((map['damages'] as List?) ?? const [])
+        .map((item) => CfDamage.fromMap(Map<String, dynamic>.from(item as Map)))
+        .toList();
+    _runtimeRules = ((map['rules'] as List?) ?? const [])
+        .map((item) => CfRule.fromMap(Map<String, dynamic>.from(item as Map)))
+        .toList();
+
+    if (_runtimeCategories!.isEmpty ||
+        _runtimeSymptoms!.isEmpty ||
+        _runtimeDamages!.isEmpty ||
+        _runtimeRules!.isEmpty) {
+      resetToDefaults();
+      return;
+    }
+
+    _datasetVersion = version ?? _cfInt(map['dataset_version'], fallback: 1);
+    _datasetPublishedAtIso =
+        publishedAtIso ?? map['published_at']?.toString();
+  }
+
+  static Map<String, dynamic> exportDatasetMap() => {
+        'schema_version': 1,
+        'dataset_version': _datasetVersion,
+        'published_at': _datasetPublishedAtIso,
+        'categories': categories.map((item) => item.toMap()).toList(),
+        'symptoms': symptoms.map((item) => item.toMap()).toList(),
+        'damages': damages.map((item) => item.toMap()).toList(),
+        'rules': rules.map((item) => item.toMap()).toList(),
+      };
+
+  static Map<String, dynamic> exportDefaultDatasetMap() => {
+        'schema_version': 1,
+        'dataset_version': 1,
+        'published_at': null,
+        'categories': _defaultCategories.map((item) => item.toMap()).toList(),
+        'symptoms': _defaultSymptoms.map((item) => item.toMap()).toList(),
+        'damages': _defaultDamages.map((item) => item.toMap()).toList(),
+        'rules': _defaultRules.map((item) => item.toMap()).toList(),
+      };
 
   static CfCategory? getCategoryById(int id) {
     try {
@@ -104,7 +263,7 @@ class CfEngine {
   // DATA — Symptoms (cf_symptoms)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static const List<CfSymptom> symptoms = [
+  static const List<CfSymptom> _defaultSymptoms = [
     // ── Handphone (category_id = 1) ──────────────────────────────────────
     CfSymptom(1, 1, 'GH01', 'Handphone tidak bisa dinyalakan sama sekali', 'Tidak ada respon saat tombol power ditekan'),
     CfSymptom(2, 1, 'GH02', 'Layar tidak menampilkan gambar (blank/hitam)', 'Layar hidup tapi gelap atau tidak ada tampilan'),
@@ -296,7 +455,7 @@ class CfEngine {
   // DATA — Damages (cf_damages)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static const List<CfDamage> damages = [
+  static const List<CfDamage> _defaultDamages = [
     // ── Handphone (category_id = 1, KH01-KH50) ───────────────────────────
     CfDamage(1, 1, 'KH01', 'Baterai Rusak/Bocor', 'Baterai tidak dapat menyimpan daya atau bocor', 'Ganti baterai baru original atau compatible', 150000, '1-2 jam'),
     CfDamage(2, 1, 'KH02', 'IC Power Rusak', 'Chip pengatur daya mengalami kerusakan', 'Ganti atau reball IC power', 300000, '2-3 hari'),
@@ -441,7 +600,7 @@ class CfEngine {
   // DATA — Rules (cf_rules: 313 rules)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static const List<CfRule> rules = [
+  static const List<CfRule> _defaultRules = [
     CfRule(6, 1, 0.85),  CfRule(8, 1, 0.80),  CfRule(32, 1, 0.75), CfRule(11, 1, 0.70),
     CfRule(1, 2, 0.85),  CfRule(7, 2, 0.70),  CfRule(8, 2, 0.65),
     CfRule(2, 3, 0.90),  CfRule(3, 3, 0.95),  CfRule(39, 3, 0.75),

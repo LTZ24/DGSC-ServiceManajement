@@ -1,46 +1,90 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../l10n/app_text.dart';
 import '../../providers/auth_provider.dart';
 
 class AppDrawer extends StatelessWidget {
   final bool isAdmin;
-  const AppDrawer({super.key, required this.isAdmin});
+  final bool isGuest;
+
+  const AppDrawer({
+    super.key,
+    required this.isAdmin,
+    this.isGuest = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final profile = auth.profile;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final displayName =
+        isGuest ? 'Guest' : (profile?['username'] as String?) ?? 'User';
+    final displayEmail = isGuest
+        ? 'Guest Diagnosis Session'
+        : (profile?['email'] as String?) ?? '';
+    final headerLetter =
+        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'G';
+    final profilePicture = (profile?['profile_picture'] as String?) ?? '';
 
     return Drawer(
+      backgroundColor: scheme.surface,
       child: Column(
         children: [
           // Header
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: AppTheme.primaryColor),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppTheme.primaryColor, AppTheme.primaryDark],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(24),
+                bottomRight: Radius.circular(24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.20),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
-              child: Text(
-                ((profile?['username'] as String?) ?? 'U')[0].toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
+              backgroundImage: _buildProfileImage(profilePicture),
+              child: _buildProfileImage(profilePicture) == null
+                  ? Text(
+                      headerLetter,
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    )
+                  : null,
             ),
             accountName: Text(
-              (profile?['username'] as String?) ?? 'User',
+              displayName,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            accountEmail: Text((profile?['email'] as String?) ?? ''),
+            accountEmail: Text(displayEmail),
           ),
 
           // Menu items
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
-              children: isAdmin ? _adminMenuItems(context) : _customerMenuItems(context),
+              children: isGuest
+                  ? const []
+                  : isAdmin
+                      ? _adminMenuItems(context)
+                      : _customerMenuItems(context),
             ),
           ),
 
@@ -48,13 +92,21 @@ class AppDrawer extends StatelessWidget {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: AppTheme.dangerColor),
-            title: const Text('Keluar',
-                style: TextStyle(color: AppTheme.dangerColor)),
+            title: Text(
+              context.tr('Keluar', 'Logout'),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: AppTheme.dangerColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             onTap: () async {
               Navigator.pop(context);
-              await auth.logout();
+              if (!isGuest) {
+                await auth.logout();
+              }
               if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/home', (r) => false);
               }
             },
           ),
@@ -64,29 +116,49 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
+  ImageProvider<Object>? _buildProfileImage(String pathOrUrl) {
+    if (pathOrUrl.isEmpty) return null;
+    if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+      return NetworkImage(pathOrUrl);
+    }
+
+    final file = File(pathOrUrl);
+    if (!file.existsSync()) return null;
+    return FileImage(file);
+  }
+
   List<Widget> _adminMenuItems(BuildContext context) {
     return [
-      _buildMenuItem(context, Icons.dashboard, 'Dashboard', '/admin/dashboard'),
-      _buildMenuItem(context, Icons.calendar_today, 'Booking', '/admin/bookings'),
-      _buildMenuItem(context, Icons.build, 'Servis', '/admin/services'),
-      _buildMenuItem(context, Icons.people, 'Pelanggan', '/admin/customers'),
-      _buildMenuItem(context, Icons.account_balance_wallet, 'Keuangan', '/admin/finance'),
-      _buildMenuItem(context, Icons.inventory, 'Spare Part', '/admin/spare-parts'),
-      _buildMenuItem(context, Icons.point_of_sale, 'Counter', '/admin/counter'),
-      _buildMenuItem(context, Icons.store, 'Pengaturan Toko', '/admin/store-settings'),
-      _buildMenuItem(context, Icons.settings, 'Pengaturan', '/admin/settings'),
+      _buildMenuItem(context, Icons.dashboard, context.tr('Dashboard', 'Dashboard'), '/admin/dashboard'),
+      _buildMenuItem(
+        context, Icons.calendar_today, context.tr('Booking', 'Bookings'), '/admin/bookings'),
+      _buildMenuItem(context, Icons.build, context.tr('Servis', 'Services'), '/admin/services'),
+      _buildMenuItem(context, Icons.people, context.tr('Pelanggan', 'Customers'), '/admin/customers'),
+      _buildMenuItem(
+        context, Icons.account_balance_wallet, context.tr('Keuangan', 'Finance'), '/admin/finance'),
+      _buildMenuItem(
+        context, Icons.inventory, context.tr('Spare Part', 'Spare Parts'), '/admin/spare-parts'),
+      _buildMenuItem(context, Icons.point_of_sale, context.tr('PPOB', 'PPOB'), '/admin/counter'),
+      _buildMenuItem(
+        context, Icons.store, context.tr('Pengaturan Toko', 'Store Settings'), '/admin/store-settings'),
+      _buildMenuItem(context, Icons.settings, context.tr('Pengaturan', 'Settings'), '/admin/settings'),
     ];
   }
 
   List<Widget> _customerMenuItems(BuildContext context) {
     return [
-      _buildMenuItem(context, Icons.dashboard, 'Dashboard', '/customer/dashboard'),
-      _buildMenuItem(context, Icons.add_circle, 'Booking Servis', '/customer/booking'),
-      _buildMenuItem(context, Icons.medical_services, 'Diagnosis', '/customer/diagnosis'),
-      _buildMenuItem(context, Icons.track_changes, 'Status Servis', '/customer/status'),
-      _buildMenuItem(context, Icons.history, 'Riwayat', '/customer/history'),
-      _buildMenuItem(context, Icons.person, 'Profil', '/customer/profile'),
-      _buildMenuItem(context, Icons.settings, 'Pengaturan', '/customer/settings'),
+      _buildMenuItem(
+        context, Icons.dashboard, context.tr('Dashboard', 'Dashboard'), '/customer/dashboard'),
+      _buildMenuItem(
+        context, Icons.add_circle, context.tr('Booking Servis', 'Service Booking'), '/customer/booking'),
+      _buildMenuItem(
+        context, Icons.medical_services, context.tr('Diagnosis', 'Diagnosis'), '/customer/diagnosis'),
+      _buildMenuItem(
+        context, Icons.track_changes, context.tr('Status Servis', 'Service Status'), '/customer/status'),
+      _buildMenuItem(context, Icons.history, context.tr('Riwayat', 'History'), '/customer/history'),
+      _buildMenuItem(context, Icons.person, context.tr('Profil', 'Profile'), '/customer/profile'),
+      _buildMenuItem(
+        context, Icons.settings, context.tr('Pengaturan', 'Settings'), '/customer/settings'),
     ];
   }
 
@@ -94,25 +166,40 @@ class AppDrawer extends StatelessWidget {
       BuildContext context, IconData icon, String title, String route) {
     final currentRoute = ModalRoute.of(context)?.settings.name;
     final isActive = currentRoute == route;
+    final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
     return ListTile(
-      leading: Icon(icon,
-          color: isActive ? AppTheme.primaryColor : Colors.grey.shade600),
+      leading: Icon(icon, color: isActive ? AppTheme.primaryColor : mutedColor),
       title: Text(
         title,
         style: TextStyle(
-          color: isActive ? AppTheme.primaryColor : null,
+          color: isActive
+              ? AppTheme.primaryColor
+              : Theme.of(context).colorScheme.onSurface,
           fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
       selected: isActive,
       selectedTileColor: AppTheme.primaryColor.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       onTap: () {
-        Navigator.pop(context); // Close drawer
-        if (!isActive) {
-          Navigator.pushReplacementNamed(context, route);
+        Navigator.pop(context);
+        if (isActive) return;
+
+        final dashboardRoute = isAdmin
+            ? '/admin/dashboard'
+            : '/customer/dashboard';
+        if (route == dashboardRoute) {
+          Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
+          return;
         }
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          route,
+          (r) => r.settings.name == dashboardRoute,
+        );
       },
     );
   }
