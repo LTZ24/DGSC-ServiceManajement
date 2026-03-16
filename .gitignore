@@ -18,6 +18,12 @@ analyze2.txt
 analyze3.txt
 analyze4.txt
 
+# Temporary analyzer capture files
+.tmp_dart_*.txt
+tmp_dart_*.txt
+dart_analyze_*.txt
+analyze_*.txt
+
 # Symbolication / Obfuscation
 app.*.symbols
 app.*.map.json
