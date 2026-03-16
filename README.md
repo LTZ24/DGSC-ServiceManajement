@@ -1,6 +1,6 @@
 # DGSC Service Management — Manajemen Servis DGSC
 
-Aplikasi Flutter untuk DigiTech Service Center dengan alur servis pelanggan, operasional admin, mesin diagnosis, transaksi PPOB/konter, antarmuka bilingual, dan backend Supabase.
+Aplikasi dengan build Flutter untuk DigiTech Service Center dengan alur servis pelanggan, operasional admin, mesin diagnosis, transaksi PPOB/konter, antarmuka bilingual, dan backend Supabase.
 
 ## Gambaran Umum
 
