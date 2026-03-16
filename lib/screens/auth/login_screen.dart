@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -69,10 +71,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     TextInput.finishAutofillContext(shouldSave: true);
 
-    await PushNotificationService.requestFirstLoginPermissions(
-      context,
-      userId: authProvider.currentUser?.uid,
-      role: authProvider.isAdmin ? 'admin' : 'customer',
+    unawaited(
+      PushNotificationService.requestFirstLoginPermissions(
+        context,
+        userId: authProvider.currentUser?.uid,
+        role: authProvider.isAdmin ? 'admin' : 'customer',
+      ),
     );
 
     if (authProvider.isAdmin) {
@@ -95,10 +99,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.loginWithAdminBiometrics();
     if (!success || !mounted) return;
 
-    await PushNotificationService.requestFirstLoginPermissions(
-      context,
-      userId: authProvider.currentUser?.uid,
-      role: 'admin',
+    unawaited(
+      PushNotificationService.requestFirstLoginPermissions(
+        context,
+        userId: authProvider.currentUser?.uid,
+        role: 'admin',
+      ),
     );
 
     Navigator.pushNamedAndRemoveUntil(
@@ -130,10 +136,13 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await authProvider.signInWithGoogle();
 
     if (!success || !mounted) return;
-    await PushNotificationService.requestFirstLoginPermissions(
-      context,
-      userId: authProvider.currentUser?.uid,
-      role: 'customer',
+
+    unawaited(
+      PushNotificationService.requestFirstLoginPermissions(
+        context,
+        userId: authProvider.currentUser?.uid,
+        role: 'customer',
+      ),
     );
     Navigator.pushNamedAndRemoveUntil(
       context,

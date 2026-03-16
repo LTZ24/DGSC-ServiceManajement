@@ -65,11 +65,12 @@ class AdminBiometricService {
       if (!await canUseBiometricLogin()) return false;
       return await _localAuth.authenticate(
         localizedReason:
-            'Authenticate with your fingerprint to continue as admin.',
+            'Sentuh sensor sidik jari untuk melanjutkan sebagai admin.',
         options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,
           sensitiveTransaction: true,
+          useErrorDialogs: true,
         ),
       );
     } catch (_) {

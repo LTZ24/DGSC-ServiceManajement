@@ -258,8 +258,12 @@ class AuthProvider extends ChangeNotifier {
   /// Logout from Supabase Auth — clear state instantly, sign out in background
   Future<void> logout() async {
     _profile = null;
+    _error = null;
     notifyListeners();
-    BackendService.signOut().ignore();
+
+    // Await local-only sign out to ensure BackendService.currentUser becomes null
+    // before the UI navigates back to Home (prevents biometric prompt on logout).
+    await BackendService.signOut(localOnly: true);
   }
 
   void clearError() {

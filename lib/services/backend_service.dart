@@ -445,11 +445,19 @@ class BackendService {
     }
   }
 
-  static Future<void> signOut() async {
+  static Future<void> signOut({bool localOnly = true}) async {
     try {
       await _googleSignIn.signOut();
     } catch (_) {}
-    await _db.auth.signOut();
+
+    // IMPORTANT:
+    // Use local sign-out by default so refresh tokens stored for admin biometric
+    // login are not revoked server-side during a normal logout.
+    await _db.auth.signOut(
+      scope: localOnly
+          ? supabase.SignOutScope.local
+          : supabase.SignOutScope.global,
+    );
   }
 
   static Future<void> verifyCurrentPassword(String password) async {
