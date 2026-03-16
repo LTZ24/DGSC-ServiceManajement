@@ -66,9 +66,9 @@ Aplikasi dengan build Flutter untuk DigiTech Service Center dengan alur servis p
 ## Struktur
 
 - lib/main.dart — bootstrap aplikasi, providers, routes
-- lib/services/backend_service.dart — abstraksi backend utama
+- lib/services/backend_service.dart — main backend
 - lib/screens/admin/counter_screen.dart — layar konter PPOB
-- lib/services/cf_engine.dart — mesin diagnosis
+- lib/services/cf_engine.dart — tools diagnosis
 - supabase/schema.sql — skema database
 - SUPABASE_SETUP.md — panduan setup Supabase lengkap
 
@@ -96,13 +96,6 @@ flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=https://Y
 ```
 
 Output: app-armeabi-v7a-release.apk | app-arm64-v8a-release.apk | app-x86_64-release.apk
-
-## Notes
-
-- Backend utama berjalan di Supabase
-- Firebase dipakai untuk dukungan messaging
-- Master data PPOB dibackup lokal dari sinkron asset/cloud
-- Aplikasi difokuskan untuk platform Android
 
 ## Setup Backend Lengkap
 
