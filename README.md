@@ -51,7 +51,7 @@ Aplikasi Flutter untuk DigiTech Service Center dengan alur servis pelanggan, ope
 - UI bahasa Indonesia dan Inggris
 - Dukungan tema terang/gelap
 
-## Teknologi
+## Tech Stack
 
 **Frontend**
 - Flutter, Provider, Material UI
@@ -96,12 +96,6 @@ flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=https://Y
 ```
 
 Output: app-armeabi-v7a-release.apk | app-arm64-v8a-release.apk | app-x86_64-release.apk
-
-## Catatan Keamanan
-
-- Jangan commit file JSON service-account atau signing key produksi
-- Jangan letakkan secret server di kode Flutter client
-- Simpan google-services.json dengan aman
 
 ## Catatan Penting
 
