@@ -11,7 +11,6 @@ subprojects {
     tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
         sourceCompatibility = JavaVersion.VERSION_17.toString()
         targetCompatibility = JavaVersion.VERSION_17.toString()
-        options.release.set(17)
     }
 
     // Some Flutter plugin Android modules set compileOptions to Java 8.
@@ -27,7 +26,7 @@ subprojects {
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions.jvmTarget = JavaVersion.VERSION_17.toString()
+        compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
