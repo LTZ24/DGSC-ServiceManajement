@@ -25,7 +25,9 @@ dependencies:
   firebase_core: ^3.15.2
   firebase_messaging: ^15.2.7
   flutter_local_notifications: ^19.4.0
+  flutter_secure_storage: ^9.2.4
   google_sign_in: ^6.2.2
+  local_auth: ^2.3.0
 
   # Local file storage (foto profil & receipt — tidak perlu cloud)
   image_picker: ^1.1.2
@@ -54,7 +56,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/logo.png"
-  adaptive_icon_background: "#FF6B35"
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/logo.png"
   min_sdk_android: 21
   remove_alpha_ios: true

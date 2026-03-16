@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_text.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/admin_biometric_service.dart';
 import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
 
@@ -20,6 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _adminBiometricReady = false;
+  bool _loadedBiometricState = false;
 
   @override
   void initState() {
@@ -28,6 +32,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         context.read<AuthProvider>().clearError();
       }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loadedBiometricState) return;
+    _loadedBiometricState = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshAdminBiometricState();
     });
   }
 
@@ -53,6 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!success || !mounted) return;
 
+    TextInput.finishAutofillContext(shouldSave: true);
+    await _refreshAdminBiometricState();
+
     await PushNotificationService.requestFirstLoginPermissions(
       context,
       userId: authProvider.currentUser?.uid,
@@ -71,6 +88,41 @@ class _LoginScreenState extends State<LoginScreen> {
         '/customer/dashboard',
         (route) => false,
       );
+    }
+  }
+
+  Future<void> _handleAdminBiometricLogin() async {
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.loginWithAdminBiometrics();
+    if (!success || !mounted) return;
+
+    await PushNotificationService.requestFirstLoginPermissions(
+      context,
+      userId: authProvider.currentUser?.uid,
+      role: 'admin',
+    );
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/admin/dashboard',
+      (route) => false,
+    );
+  }
+
+  Future<void> _refreshAdminBiometricState() async {
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final isAdmin = args?['role'] == 'admin';
+    if (!isAdmin) {
+      if (mounted) {
+        setState(() => _adminBiometricReady = false);
+      }
+      return;
+    }
+
+    final ready = await AdminBiometricService.canUseBiometricLogin();
+    if (mounted) {
+      setState(() => _adminBiometricReady = ready);
     }
   }
 
@@ -131,24 +183,29 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Masukkan email yang valid.', 'Enter a valid email.'))),
+        SnackBar(
+            content: Text(context.tr(
+                'Masukkan email yang valid.', 'Enter a valid email.'))),
       );
       return;
     }
 
     try {
       await BackendService.sendPasswordResetEmail(email);
-      await BackendService.savePasswordResetRole(isAdmin ? 'admin' : 'customer');
+      await BackendService.savePasswordResetRole(
+          isAdmin ? 'admin' : 'customer');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('Email reset password telah dikirim.', 'Password reset email has been sent.')),
+          content: Text(context.tr('Email reset password telah dikirim.',
+              'Password reset email has been sent.')),
           backgroundColor: AppTheme.successColor,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${context.tr('Gagal mengirim email reset', 'Failed to send reset email')}: $e'),
+          content: Text(
+              '${context.tr('Gagal mengirim email reset', 'Failed to send reset email')}: $e'),
           backgroundColor: AppTheme.dangerColor,
         ),
       );
@@ -216,313 +273,379 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Form(
                     key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 8),
-                        Center(
-                          child: Container(
-                            width: 92,
-                            height: 92,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color:
-                                  secondarySurfaceColor.withValues(alpha: 0.75),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(color: borderColor),
-                            ),
-                            child: Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.phone_android,
-                                size: 52,
-                                color: AppTheme.primaryColor,
+                    child: AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 8),
+                          Center(
+                            child: Container(
+                              width: 92,
+                              height: 92,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: secondarySurfaceColor.withValues(
+                                    alpha: 0.75),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.phone_android,
+                                  size: 52,
+                                  color: AppTheme.primaryColor,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          roleTitle,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: theme.textTheme.titleLarge?.color,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            roleSubtitle,
+                          const SizedBox(height: 16),
+                          Text(
+                            roleTitle,
                             textAlign: TextAlign.center,
                             style: GoogleFonts.poppins(
-                              fontSize: 13,
-                              height: 1.6,
-                              color: subtitleColor,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: theme.textTheme.titleLarge?.color,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                          decoration: BoxDecoration(
-                            color: surfaceColor.withValues(alpha: 0.96),
-                            borderRadius: BorderRadius.circular(26),
-                            border: Border.all(color: borderColor),
-                            boxShadow: [
-                              BoxShadow(
-                                color: shadowColor,
-                                blurRadius: 24,
-                                offset: const Offset(0, 12),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              roleSubtitle,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                height: 1.6,
+                                color: subtitleColor,
                               ),
-                            ],
+                            ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Consumer<AuthProvider>(
-                                builder: (context, auth, _) {
-                                  if (auth.error == null) {
-                                    return const SizedBox.shrink();
-                                  }
-
-                                  return Container(
-                                    padding: const EdgeInsets.all(12),
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.dangerColor
-                                          .withValues(alpha: 0.10),
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(
-                                        color: AppTheme.dangerColor
-                                            .withValues(alpha: 0.24),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.error_outline_rounded,
-                                          color: AppTheme.dangerColor,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Text(
-                                            auth.error!,
-                                            style: GoogleFonts.poppins(
-                                              color: AppTheme.dangerColor,
-                                              fontSize: 12.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                              TextFormField(
-                                controller: _identifierController,
-                                keyboardType: TextInputType.text,
-                                decoration: InputDecoration(
-                                  labelText: context.tr('Email / Username / Nomor HP', 'Email / Username / Phone Number'),
-                                  prefixIcon: const Icon(Icons.alternate_email),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                            decoration: BoxDecoration(
+                              color: surfaceColor.withValues(alpha: 0.96),
+                              borderRadius: BorderRadius.circular(26),
+                              border: Border.all(color: borderColor),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: shadowColor,
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 12),
                                 ),
-                                validator: (value) {
-                                  if (value == null || value.trim().isEmpty) {
-                                    return context.tr('Masukkan email, username, atau nomor HP', 'Enter email, username, or phone number');
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 14),
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                decoration: InputDecoration(
-                                  labelText: context.tr('Password', 'Password'),
-                                  prefixIcon: const Icon(Icons.lock_outline),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return context.tr('Masukkan password', 'Enter password');
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 6),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: _handleForgotPassword,
-                                  child: Text(context.tr('Lupa password?', 'Forgot password?')),
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Consumer<AuthProvider>(
-                                builder: (context, auth, _) {
-                                  return SizedBox(
-                                    height: 52,
-                                    child: ElevatedButton(
-                                      onPressed:
-                                          auth.isLoading ? null : _handleLogin,
-                                      child: auth.isLoading
-                                          ? const SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: Colors.white,
-                                              ),
-                                            )
-                                          : Text(
-                                              context.tr('Masuk Sekarang', 'Sign In'),
-                                              style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              if (!isAdmin) ...[
-                                const SizedBox(height: 14),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Divider(
-                                        color: borderColor,
-                                        thickness: 1,
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 12),
-                                      child: Text(
-                                        context.tr('atau', 'or'),
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 12,
-                                          color: subtitleColor,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Divider(
-                                        color: borderColor,
-                                        thickness: 1,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
                                 Consumer<AuthProvider>(
                                   builder: (context, auth, _) {
-                                    return SizedBox(
-                                      height: 52,
-                                      child: OutlinedButton(
-                                        onPressed: auth.isLoading
-                                            ? null
-                                            : _handleGoogleLogin,
-                                        style: OutlinedButton.styleFrom(
-                                          backgroundColor: surfaceColor
-                                              .withValues(alpha: 0.92),
-                                          side: BorderSide(color: borderColor),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(18),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                          ),
+                                    if (auth.error == null) {
+                                      return const SizedBox.shrink();
+                                    }
+
+                                    return Container(
+                                      padding: const EdgeInsets.all(12),
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.dangerColor
+                                            .withValues(alpha: 0.10),
+                                        borderRadius: BorderRadius.circular(18),
+                                        border: Border.all(
+                                          color: AppTheme.dangerColor
+                                              .withValues(alpha: 0.24),
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const _GoogleLogo(size: 20),
-                                            const SizedBox(width: 12),
-                                            Text(
-                                              context.tr('Masuk dengan Google', 'Sign in with Google'),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.error_outline_rounded,
+                                            color: AppTheme.dangerColor,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              auth.error!,
                                               style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.w700,
-                                                color: theme
-                                                    .textTheme.bodyLarge?.color,
+                                                color: AppTheme.dangerColor,
+                                                fontSize: 12.5,
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
                                     );
                                   },
                                 ),
-                              ],
-                              const SizedBox(height: 14),
-                              if (!isAdmin)
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      context.tr('Belum punya akun? ', 'Don\'t have an account? '),
+                                TextFormField(
+                                  controller: _identifierController,
+                                  keyboardType: TextInputType.text,
+                                  autofillHints: const [
+                                    AutofillHints.username,
+                                    AutofillHints.email,
+                                    AutofillHints.telephoneNumber,
+                                  ],
+                                  textInputAction: TextInputAction.next,
+                                  decoration: InputDecoration(
+                                    labelText: context.tr(
+                                        'Email / Username / Nomor HP',
+                                        'Email / Username / Phone Number'),
+                                    prefixIcon:
+                                        const Icon(Icons.alternate_email),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return context.tr(
+                                          'Masukkan email, username, atau nomor HP',
+                                          'Enter email, username, or phone number');
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 14),
+                                TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  autofillHints: const [AutofillHints.password],
+                                  textInputAction: TextInputAction.done,
+                                  onFieldSubmitted: (_) => _handleLogin(),
+                                  decoration: InputDecoration(
+                                    labelText:
+                                        context.tr('Password', 'Password'),
+                                    prefixIcon: const Icon(Icons.lock_outline),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return context.tr('Masukkan password',
+                                          'Enter password');
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 6),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: _handleForgotPassword,
+                                    child: Text(context.tr(
+                                        'Lupa password?', 'Forgot password?')),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Consumer<AuthProvider>(
+                                  builder: (context, auth, _) {
+                                    return SizedBox(
+                                      height: 52,
+                                      child: ElevatedButton(
+                                        onPressed: auth.isLoading
+                                            ? null
+                                            : _handleLogin,
+                                        child: auth.isLoading
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : Text(
+                                                context.tr('Masuk Sekarang',
+                                                    'Sign In'),
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                if (isAdmin && _adminBiometricReady) ...[
+                                  const SizedBox(height: 12),
+                                  Consumer<AuthProvider>(
+                                    builder: (context, auth, _) {
+                                      return SizedBox(
+                                        height: 52,
+                                        child: OutlinedButton.icon(
+                                          onPressed: auth.isLoading
+                                              ? null
+                                              : _handleAdminBiometricLogin,
+                                          icon: const Icon(
+                                              Icons.fingerprint_rounded),
+                                          label: Text(
+                                            context.tr(
+                                              'Masuk dengan Sidik Jari',
+                                              'Sign in with Fingerprint',
+                                            ),
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            side:
+                                                BorderSide(color: borderColor),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                                if (!isAdmin) ...[
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Divider(
+                                          color: borderColor,
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                        child: Text(
+                                          context.tr('atau', 'or'),
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 12,
+                                            color: subtitleColor,
+                                          ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Divider(
+                                          color: borderColor,
+                                          thickness: 1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Consumer<AuthProvider>(
+                                    builder: (context, auth, _) {
+                                      return SizedBox(
+                                        height: 52,
+                                        child: OutlinedButton(
+                                          onPressed: auth.isLoading
+                                              ? null
+                                              : _handleGoogleLogin,
+                                          style: OutlinedButton.styleFrom(
+                                            backgroundColor: surfaceColor
+                                                .withValues(alpha: 0.92),
+                                            side:
+                                                BorderSide(color: borderColor),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const _GoogleLogo(size: 20),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                context.tr(
+                                                    'Masuk dengan Google',
+                                                    'Sign in with Google'),
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: theme.textTheme
+                                                      .bodyLarge?.color,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                                const SizedBox(height: 14),
+                                if (!isAdmin)
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        context.tr('Belum punya akun? ',
+                                            'Don\'t have an account? '),
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.5,
+                                          color: subtitleColor,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pushNamed(
+                                              context, '/register');
+                                        },
+                                        child: Text(context.tr(
+                                            'Daftar Sekarang', 'Register Now')),
+                                      ),
+                                    ],
+                                  ),
+                                if (isAdmin)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: Text(
+                                      context.tr(
+                                        'Akun admin baru dibuat dari menu Pengaturan Admin.',
+                                        'New admin accounts are created from the Admin Settings menu.',
+                                      ),
+                                      textAlign: TextAlign.center,
                                       style: GoogleFonts.poppins(
                                         fontSize: 12.5,
                                         color: subtitleColor,
                                       ),
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pushNamed(
-                                            context, '/register');
-                                      },
-                                      child: Text(context.tr('Daftar Sekarang', 'Register Now')),
+                                  ),
+                                Center(
+                                  child: TextButton.icon(
+                                    onPressed: () =>
+                                        Navigator.pushReplacementNamed(
+                                            context, '/home'),
+                                    icon: const Icon(Icons.home_outlined,
+                                        size: 16),
+                                    label: Text(
+                                      context.tr(
+                                        'Kembali ke Beranda',
+                                        'Back to Home',
+                                      ),
                                     ),
-                                  ],
-                                ),
-                              if (isAdmin)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Text(
-                                    context.tr(
-                                      'Akun admin baru dibuat dari menu Pengaturan Admin.',
-                                      'New admin accounts are created from the Admin Settings menu.',
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 12.5,
-                                      color: subtitleColor,
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: subtitleColor,
                                     ),
                                   ),
                                 ),
-                              Center(
-                                child: TextButton.icon(
-                                  onPressed: () =>
-                                      Navigator.pushReplacementNamed(
-                                          context, '/home'),
-                                  icon:
-                                      const Icon(Icons.home_outlined, size: 16),
-                                  label: Text(context.tr('Kembali ke Beranda', 'Back to Home')),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: subtitleColor,
-                                  ),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

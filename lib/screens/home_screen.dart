@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../services/admin_biometric_service.dart';
+import '../services/backend_service.dart';
 import '../config/theme.dart';
 import '../l10n/app_text.dart';
 import '../providers/auth_provider.dart';
@@ -37,6 +39,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isLoggedIn) {
       if (authProvider.isAdmin) {
+        final shouldProtect =
+            await AdminBiometricService.canUseBiometricLogin();
+        if (shouldProtect) {
+          final authenticated = await AdminBiometricService.authenticate();
+          if (!authenticated) {
+            await BackendService.signOut();
+            if (!mounted) return;
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+              arguments: {'role': 'admin'},
+            );
+            return;
+          }
+        }
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/admin/dashboard',
@@ -276,8 +294,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   iconBgColor: AppTheme.primaryColor,
                   iconFgColor: Colors.white,
                   title: context.tr('Sistem Diagnosa', 'Diagnosis System'),
-                  subtitle:
-                      context.tr('Diagnosa kerusakan perangkat dengan alur yang sederhana dan hasil yang cepat dipahami.', 'Diagnose device issues with a simple flow and easy-to-understand results.'),
+                  subtitle: context.tr(
+                      'Diagnosa kerusakan perangkat dengan alur yang sederhana dan hasil yang cepat dipahami.',
+                      'Diagnose device issues with a simple flow and easy-to-understand results.'),
                   badge: context.tr('AI-Powered', 'AI-Powered'),
                   accentColor: AppTheme.primaryColor,
                   onTap: () => Navigator.pushNamed(context, '/diagnosis'),
@@ -288,8 +307,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   iconBgColor: AppTheme.primaryColor.withValues(alpha: 0.12),
                   iconFgColor: AppTheme.primaryColor,
                   title: context.tr('Login Customer', 'Customer Login'),
-                  subtitle:
-                      context.tr('Akses booking servis, cek status perangkat, dan lihat riwayat perbaikan secara praktis.', 'Access service booking, device status, and repair history easily.'),
+                  subtitle: context.tr(
+                      'Akses booking servis, cek status perangkat, dan lihat riwayat perbaikan secara praktis.',
+                      'Access service booking, device status, and repair history easily.'),
                   badge: context.tr('Area Customer', 'Customer Area'),
                   accentColor: const Color(0xFF22C55E),
                   onTap: () => Navigator.pushNamed(context, '/login',
@@ -301,8 +321,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   iconBgColor: AppTheme.primaryColor.withValues(alpha: 0.12),
                   iconFgColor: AppTheme.primaryColor,
                   title: context.tr('Login Admin', 'Admin Login'),
-                  subtitle:
-                    context.tr('Kelola servis, transaksi konter PPOB, keuangan, dan inventaris dengan panel yang terpusat.', 'Manage services, counter transactions, finance, and inventory from one central panel.'),
+                  subtitle: context.tr(
+                      'Kelola servis, transaksi konter PPOB, keuangan, dan inventaris dengan panel yang terpusat.',
+                      'Manage services, counter transactions, finance, and inventory from one central panel.'),
                   badge: context.tr('Panel Admin', 'Admin Panel'),
                   accentColor: const Color(0xFF6366F1),
                   onTap: () => Navigator.pushNamed(context, '/login',
@@ -340,11 +361,15 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _infoRow(Icons.apps, context.tr('Nama', 'Name'), 'DigiTech Service Center'),
-            _infoRow(Icons.info_outline, context.tr('Versi', 'Version'), '1.0.0'),
-            _infoRow(Icons.code, context.tr('Developer', 'Developer'), 'Muhamad Latip M.'),
+            _infoRow(Icons.apps, context.tr('Nama', 'Name'),
+                'DigiTech Service Center'),
+            _infoRow(
+                Icons.info_outline, context.tr('Versi', 'Version'), '1.0.0'),
+            _infoRow(Icons.code, context.tr('Developer', 'Developer'),
+                'Muhamad Latip M.'),
             _infoRow(Icons.link, 'GitHub', 'github.com/LTZ24'),
-            _infoRow(Icons.storage, context.tr('Server', 'Server'), 'Supabase PostgreSQL (Cloud)'),
+            _infoRow(Icons.storage, context.tr('Server', 'Server'),
+                'Supabase PostgreSQL (Cloud)'),
             _infoRow(Icons.cloud, 'Platform', 'Supabase'),
             _infoRow(Icons.phone_iphone, 'Build', 'Flutter 3.x'),
           ],
@@ -417,8 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool isCompact,
     required bool isEnglish,
   }) {
-    final icon =
-        isEnglish ? Icons.language_rounded : Icons.translate_rounded;
+    final icon = isEnglish ? Icons.language_rounded : Icons.translate_rounded;
     final label = isEnglish ? 'EN' : 'ID';
 
     return InkWell(

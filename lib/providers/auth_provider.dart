@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/admin_biometric_service.dart';
 import '../services/backend_types.dart';
 import '../services/backend_service.dart';
 
@@ -70,6 +71,10 @@ class AuthProvider extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
         return false;
+      }
+
+      if (_profile?['role'] == 'admin') {
+        await AdminBiometricService.enableForCurrentAdmin(uid: uid);
       }
 
       _isLoading = false;
@@ -187,6 +192,67 @@ class AuthProvider extends ChangeNotifier {
       return false;
     } catch (_) {
       _error = 'Login Google gagal. Coba lagi.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> loginWithAdminBiometrics() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final authenticated = await AdminBiometricService.authenticate();
+      if (!authenticated) {
+        _error = 'Autentikasi sidik jari dibatalkan atau gagal.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final restored = await AdminBiometricService.restoreAdminSession();
+      if (!restored) {
+        await AdminBiometricService.disable();
+        _error =
+            'Sesi login sidik jari sudah tidak valid. Silakan login ulang dengan password.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final current = BackendService.currentUser;
+      if (current == null) {
+        _error = 'Sesi login sidik jari tidak valid.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      _profile = await _loadProfileWithRetry(current.uid);
+      if (_profile == null || _profile?['role'] != 'admin') {
+        await BackendService.signOut();
+        await AdminBiometricService.disable();
+        _profile = null;
+        _error = 'Login sidik jari hanya tersedia untuk admin yang valid.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      await AdminBiometricService.enableForCurrentAdmin(uid: current.uid);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on BackendException catch (e) {
+      _error = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (_) {
+      _error = 'Login sidik jari gagal. Coba lagi.';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -324,5 +390,4 @@ class AuthProvider extends ChangeNotifier {
             : 'Login Google gagal. Coba lagi.';
     }
   }
-
 }
