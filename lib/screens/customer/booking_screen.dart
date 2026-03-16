@@ -97,18 +97,23 @@ class _BookingScreenState extends State<BookingScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
+    final customerFallback = context.tr('Customer', 'Customer');
+
+    final authProfile = context.read<AuthProvider>().profile;
+
     final user = BackendService.currentUser;
     final uid = user?.uid ?? '';
-    final profile = context.read<AuthProvider>().profile ??
+    final profile = authProfile ??
       (uid.isEmpty ? null : await BackendService.getUserProfile(uid));
-    final resolvedName = (profile?['username']?.toString().trim().isNotEmpty ??
-        false)
-      ? profile!['username'].toString().trim()
-      : (user?.displayName?.trim().isNotEmpty ?? false)
-        ? user!.displayName!.trim()
-        : (user?.email?.split('@').first.trim().isNotEmpty ?? false)
-          ? user!.email!.split('@').first.trim()
-          : context.tr('Customer', 'Customer');
+    if (!mounted) return;
+    final resolvedName =
+        (profile?['username']?.toString().trim().isNotEmpty ?? false)
+            ? profile!['username'].toString().trim()
+            : (user?.displayName?.trim().isNotEmpty ?? false)
+                ? user!.displayName!.trim()
+                : (user?.email?.split('@').first.trim().isNotEmpty ?? false)
+                    ? user!.email!.split('@').first.trim()
+                    : customerFallback;
     final resolvedPhone = profile?['phone']?.toString().trim() ?? '';
 
     final data = <String, dynamic>{
@@ -140,14 +145,20 @@ class _BookingScreenState extends State<BookingScreen> {
           : 0;
     }
 
+    final notifyAdminTitle =
+        context.tr('Booking servis baru', 'New service booking');
+    final notifyAdminMessage = context.tr(
+      'Booking baru dari ${data['customer_name'] ?? 'customer'} untuk ${data['brand'] ?? ''} ${data['model'] ?? ''}.',
+      'New booking from ${data['customer_name'] ?? 'customer'} for ${data['brand'] ?? ''} ${data['model'] ?? ''}.',
+    );
+
     try {
       final bookingRef = await BackendService.addBooking(data);
 
       try {
         await BackendService.notifyAdmins(
-          title: context.tr('Booking servis baru', 'New service booking'),
-          message:
-              context.tr('Booking baru dari ${data['customer_name'] ?? 'customer'} untuk ${data['brand'] ?? ''} ${data['model'] ?? ''}.', 'New booking from ${data['customer_name'] ?? 'customer'} for ${data['brand'] ?? ''} ${data['model'] ?? ''}.'),
+          title: notifyAdminTitle,
+          message: notifyAdminMessage,
           relatedId: bookingRef.id,
           type: 'booking',
         );
@@ -180,7 +191,8 @@ class _BookingScreenState extends State<BookingScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.tr('Booking berhasil dikirim!', 'Booking submitted successfully!')),
+          content: Text(context.tr(
+              'Booking berhasil dikirim!', 'Booking submitted successfully!')),
           backgroundColor: AppTheme.successColor,
         ));
         Navigator.pushNamedAndRemoveUntil(
@@ -207,7 +219,8 @@ class _BookingScreenState extends State<BookingScreen> {
     final mutedColor = theme.colorScheme.onSurfaceVariant;
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('Booking Servis', 'Service Booking'))),
+      appBar:
+          AppBar(title: Text(context.tr('Booking Servis', 'Service Booking'))),
       drawer: const AppDrawer(isAdmin: false),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -268,7 +281,8 @@ class _BookingScreenState extends State<BookingScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  context.tr('Booking Servis Premium', 'Premium Service Booking'),
+                                  context.tr('Booking Servis Premium',
+                                      'Premium Service Booking'),
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
@@ -277,7 +291,9 @@ class _BookingScreenState extends State<BookingScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  context.tr('Isi data perangkat sekali, lalu pantau progres servis dari halaman status.', 'Fill in your device data once, then track service progress from the status page.'),
+                                  context.tr(
+                                      'Isi data perangkat sekali, lalu pantau progres servis dari halaman status.',
+                                      'Fill in your device data once, then track service progress from the status page.'),
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.88),
                                     height: 1.4,
@@ -293,11 +309,16 @@ class _BookingScreenState extends State<BookingScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _buildHeroChip(Icons.schedule, context.tr('Respon cepat', 'Fast response')),
+                          _buildHeroChip(Icons.schedule,
+                              context.tr('Respon cepat', 'Fast response')),
                           _buildHeroChip(
-                              Icons.support_agent, context.tr('Update status real-time', 'Real-time status updates')),
+                              Icons.support_agent,
+                              context.tr('Update status real-time',
+                                  'Real-time status updates')),
                           _buildHeroChip(
-                              Icons.payments_outlined, context.tr('Pembayaran fleksibel', 'Flexible payment')),
+                              Icons.payments_outlined,
+                              context.tr(
+                                  'Pembayaran fleksibel', 'Flexible payment')),
                         ],
                       ),
                     ],
@@ -307,8 +328,9 @@ class _BookingScreenState extends State<BookingScreen> {
               const SizedBox(height: 20),
               _BookingSectionCard(
                 title: context.tr('Diagnosis awal', 'Initial diagnosis'),
-                subtitle:
-                    context.tr('Opsional, tetapi membantu admin memahami gejala lebih cepat.', 'Optional, but helps admin understand the symptoms faster.'),
+                subtitle: context.tr(
+                    'Opsional, tetapi membantu admin memahami gejala lebih cepat.',
+                    'Optional, but helps admin understand the symptoms faster.'),
                 child: InkWell(
                   onTap: _openDiagnosis,
                   borderRadius: BorderRadius.circular(18),
@@ -329,14 +351,18 @@ class _BookingScreenState extends State<BookingScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(context.tr('Diagnosis Kerusakan', 'Damage Diagnosis'),
+                            Text(
+                                context.tr(
+                                    'Diagnosis Kerusakan', 'Damage Diagnosis'),
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 15)),
                             const SizedBox(height: 4),
                             Text(
                               _diagnosisResults != null
                                   ? '${context.tr('Hasil teratas', 'Top result')}: ${_diagnosisResults!.first.damage.name}'
-                                  : context.tr('Cek kerusakan perangkat Anda sebelum booking.', 'Check your device issues before booking.'),
+                                  : context.tr(
+                                      'Cek kerusakan perangkat Anda sebelum booking.',
+                                      'Check your device issues before booking.'),
                               style: TextStyle(fontSize: 12, color: mutedColor),
                             ),
                           ],
@@ -350,14 +376,16 @@ class _BookingScreenState extends State<BookingScreen> {
               const SizedBox(height: 20),
               _BookingSectionCard(
                 title: context.tr('Informasi perangkat', 'Device information'),
-                subtitle:
-                    context.tr('Data ini membantu tim menyiapkan estimasi pengerjaan dan spare part.', 'This data helps the team prepare estimates and spare parts.'),
+                subtitle: context.tr(
+                    'Data ini membantu tim menyiapkan estimasi pengerjaan dan spare part.',
+                    'This data helps the team prepare estimates and spare parts.'),
                 child: Column(
                   children: [
                     DropdownButtonFormField<String>(
-                      value: _selectedDeviceType,
+                      initialValue: _selectedDeviceType,
                       decoration: InputDecoration(
-                          labelText: context.tr('Jenis Perangkat', 'Device Type'),
+                          labelText:
+                              context.tr('Jenis Perangkat', 'Device Type'),
                           prefixIcon: const Icon(Icons.devices)),
                       items: _deviceTypes
                           .map(
@@ -368,7 +396,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                        decoration: InputDecoration(
+                      decoration: InputDecoration(
                           labelText: context.tr('Merek', 'Brand'),
                           prefixIcon: const Icon(Icons.branding_watermark)),
                       items: _brands
@@ -376,23 +404,28 @@ class _BookingScreenState extends State<BookingScreen> {
                               (b) => DropdownMenuItem(value: b, child: Text(b)))
                           .toList(),
                       onChanged: (val) => setState(() => _selectedBrand = val),
-                      validator: (v) => v == null ? context.tr('Pilih merek', 'Select a brand') : null,
+                      validator: (v) => v == null
+                          ? context.tr('Pilih merek', 'Select a brand')
+                          : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _modelController,
-                        decoration: InputDecoration(
+                      decoration: InputDecoration(
                           labelText: context.tr('Model', 'Model'),
                           prefixIcon: const Icon(Icons.phone_android),
-                          hintText: context.tr('Contoh: Galaxy S21, iPhone 14', 'Example: Galaxy S21, iPhone 14')),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? context.tr('Model wajib diisi', 'Model is required') : null,
+                          hintText: context.tr('Contoh: Galaxy S21, iPhone 14',
+                              'Example: Galaxy S21, iPhone 14')),
+                      validator: (v) => v == null || v.isEmpty
+                          ? context.tr('Model wajib diisi', 'Model is required')
+                          : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _serialController,
                       decoration: InputDecoration(
-                          labelText: context.tr('Nomor Seri (opsional)', 'Serial Number (optional)'),
+                          labelText: context.tr('Nomor Seri (opsional)',
+                              'Serial Number (optional)'),
                           prefixIcon: const Icon(Icons.qr_code)),
                     ),
                   ],
@@ -401,19 +434,24 @@ class _BookingScreenState extends State<BookingScreen> {
               const SizedBox(height: 20),
               _BookingSectionCard(
                 title: context.tr('Detail kendala', 'Issue details'),
-                subtitle:
-                    context.tr('Tulis gejala utama agar proses pengecekan lebih akurat.', 'Write the main symptoms so the inspection process is more accurate.'),
+                subtitle: context.tr(
+                    'Tulis gejala utama agar proses pengecekan lebih akurat.',
+                    'Write the main symptoms so the inspection process is more accurate.'),
                 child: Column(
                   children: [
                     TextFormField(
                       controller: _issueController,
                       maxLines: 4,
                       decoration: InputDecoration(
-                          labelText: context.tr('Deskripsi Kerusakan', 'Issue Description'),
+                          labelText: context.tr(
+                              'Deskripsi Kerusakan', 'Issue Description'),
                           alignLabelWithHint: true,
-                          hintText: context.tr('Jelaskan masalah perangkat Anda...', 'Describe your device problem...')),
+                          hintText: context.tr(
+                              'Jelaskan masalah perangkat Anda...',
+                              'Describe your device problem...')),
                       validator: (v) => v == null || v.isEmpty
-                          ? context.tr('Deskripsi wajib diisi', 'Description is required')
+                          ? context.tr('Deskripsi wajib diisi',
+                              'Description is required')
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -421,13 +459,15 @@ class _BookingScreenState extends State<BookingScreen> {
                       onTap: _selectDate,
                       child: InputDecorator(
                         decoration: InputDecoration(
-                            labelText: context.tr('Tanggal Preferensi', 'Preferred Date'),
+                            labelText: context.tr(
+                                'Tanggal Preferensi', 'Preferred Date'),
                             prefixIcon: const Icon(Icons.calendar_today)),
                         child: Text(
                           _preferredDate != null
                               ? DateFormat('dd MMMM yyyy', 'id_ID')
                                   .format(_preferredDate!)
-                              : context.tr('Pilih tanggal kunjungan', 'Choose a visit date'),
+                              : context.tr('Pilih tanggal kunjungan',
+                                  'Choose a visit date'),
                           style: TextStyle(
                             color: _preferredDate != null ? null : mutedColor,
                           ),
@@ -438,8 +478,9 @@ class _BookingScreenState extends State<BookingScreen> {
                     TextFormField(
                       controller: _notesController,
                       maxLines: 2,
-                        decoration: InputDecoration(
-                          labelText: context.tr('Catatan Tambahan (opsional)', 'Additional Notes (optional)'),
+                      decoration: InputDecoration(
+                          labelText: context.tr('Catatan Tambahan (opsional)',
+                              'Additional Notes (optional)'),
                           alignLabelWithHint: true),
                     ),
                   ],
@@ -465,7 +506,9 @@ class _BookingScreenState extends State<BookingScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        context.tr('Setelah booking dikirim, admin akan meninjau data lalu status booking dan servis dapat dipantau dari menu Status.', 'After the booking is sent, the admin will review the data and the booking/service status can be tracked from the Status menu.'),
+                        context.tr(
+                            'Setelah booking dikirim, admin akan meninjau data lalu status booking dan servis dapat dipantau dari menu Status.',
+                            'After the booking is sent, the admin will review the data and the booking/service status can be tracked from the Status menu.'),
                         style: TextStyle(color: mutedColor, height: 1.5),
                       ),
                     ),
@@ -484,7 +527,9 @@ class _BookingScreenState extends State<BookingScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.send),
-                  label: Text(_isLoading ? context.tr('Mengirim...', 'Sending...') : context.tr('Kirim Booking', 'Submit Booking')),
+                  label: Text(_isLoading
+                      ? context.tr('Mengirim...', 'Sending...')
+                      : context.tr('Kirim Booking', 'Submit Booking')),
                 ),
               ),
             ],
@@ -574,4 +619,3 @@ class _BookingSectionCard extends StatelessWidget {
     );
   }
 }
-

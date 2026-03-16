@@ -37,6 +37,8 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
     final status = await Permission.notification.request();
     if (!mounted) return;
 
+    final role = context.read<AuthProvider>().profile?['role']?.toString();
+
     setState(() => _notificationStatus = status);
     if (status.isGranted) {
       final userId = BackendService.currentUser?.uid;
@@ -45,16 +47,19 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
       }
       await PushNotificationService.syncTopicSubscriptions(
         userId: userId,
-        role: context.read<AuthProvider>().profile?['role']?.toString(),
+        role: role,
       );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.tr('Notifikasi diaktifkan ✓', 'Notifications enabled ✓')),
+          content: Text(
+              context.tr('Notifikasi diaktifkan ✓', 'Notifications enabled ✓')),
           backgroundColor: AppTheme.successColor));
     } else if (status.isPermanentlyDenied) {
       openAppSettings();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('Izin notifikasi ditolak', 'Notification permission denied'))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr(
+              'Izin notifikasi ditolak', 'Notification permission denied'))));
     }
   }
 
@@ -81,7 +86,8 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                 color: AppTheme.primaryColor,
               ),
               title: Text(context.tr('Mode Gelap', 'Dark Mode')),
-              subtitle: Text(themeProvider.isDark
+              subtitle: Text(
+                  themeProvider.isDark
                       ? context.tr('Aktif', 'Enabled')
                       : context.tr('Nonaktif', 'Disabled'),
                   style: const TextStyle(fontSize: 12)),
@@ -97,9 +103,7 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
               leading: const Icon(Icons.language, color: AppTheme.primaryColor),
               title: Text(context.tr('Bahasa', 'Language')),
               subtitle: Text(
-                localeProvider.isEnglish
-                    ? 'English'
-                    : 'Bahasa Indonesia',
+                localeProvider.isEnglish ? 'English' : 'Bahasa Indonesia',
                 style: const TextStyle(fontSize: 12),
               ),
               trailing: DropdownButtonHideUnderline(
@@ -127,8 +131,10 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
               leading: const Icon(Icons.notifications_outlined,
                   color: AppTheme.infoColor),
               title: Text(context.tr('Notifikasi Push', 'Push Notifications')),
-              subtitle: Text(context.tr('Izinkan notifikasi dari aplikasi ini', 'Allow notifications from this application'),
-                style: const TextStyle(fontSize: 12)),
+              subtitle: Text(
+                  context.tr('Izinkan notifikasi dari aplikasi ini',
+                      'Allow notifications from this application'),
+                  style: const TextStyle(fontSize: 12)),
               trailing: _notificationStatus == null
                   ? const SizedBox(
                       width: 20,
@@ -154,16 +160,19 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
             child: Column(
               children: [
                 ListTile(
-                  leading:
-                      const Icon(Icons.phone_android, color: AppTheme.primaryColor),
-                  title: Text(context.tr('DigiTech Service Center', 'DigiTech Service Center')),
-                  subtitle: Text(context.tr('Aplikasi manajemen servis perangkat digital', 'Digital device service management application'),
+                  leading: const Icon(Icons.phone_android,
+                      color: AppTheme.primaryColor),
+                  title: Text(context.tr(
+                      'DigiTech Service Center', 'DigiTech Service Center')),
+                  subtitle: Text(
+                      context.tr('Aplikasi manajemen servis perangkat digital',
+                          'Digital device service management application'),
                       style: TextStyle(fontSize: 12)),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading:
-                      const Icon(Icons.info_outline, color: AppTheme.primaryColor),
+                  leading: const Icon(Icons.info_outline,
+                      color: AppTheme.primaryColor),
                   title: Text(context.tr('Versi Aplikasi', 'App Version')),
                   trailing: const Text('1.0.0',
                       style: TextStyle(fontWeight: FontWeight.bold)),
@@ -171,20 +180,24 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.code, color: AppTheme.primaryColor),
-                  title: Text(context.tr('GitHub Developer', 'GitHub Developer')),
+                  title:
+                      Text(context.tr('GitHub Developer', 'GitHub Developer')),
                   subtitle: const Text('github.com/LTZ24'),
                   trailing: const Icon(Icons.open_in_new,
                       size: 16, color: Colors.grey),
                   onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('https://github.com/LTZ24'))),
+                      const SnackBar(
+                          content: Text('https://github.com/LTZ24'))),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.storage, color: AppTheme.primaryColor),
-                  title: Text(context.tr('Server / Backend', 'Server / Backend')),
-                  subtitle: Text(context.tr('Supabase PostgreSQL (Cloud)', 'Supabase PostgreSQL (Cloud)')),
-                  trailing: const Icon(Icons.cloud_done, color: AppTheme.successColor),
+                  title:
+                      Text(context.tr('Server / Backend', 'Server / Backend')),
+                  subtitle: Text(context.tr('Supabase PostgreSQL (Cloud)',
+                      'Supabase PostgreSQL (Cloud)')),
+                  trailing: const Icon(Icons.cloud_done,
+                      color: AppTheme.successColor),
                 ),
               ],
             ),

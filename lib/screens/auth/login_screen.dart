@@ -202,6 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await BackendService.sendPasswordResetEmail(email);
       await BackendService.savePasswordResetRole(
           isAdmin ? 'admin' : 'customer');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.tr('Email reset password telah dikirim.',
@@ -210,6 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

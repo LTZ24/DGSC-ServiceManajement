@@ -47,11 +47,14 @@ class _SplashScreenState extends State<SplashScreen> {
             return;
           }
         }
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/admin/dashboard');
       } else {
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/customer/dashboard');
       }
     } else {
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     }
   }

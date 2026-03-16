@@ -1,8 +1,8 @@
-/// local_storage_service.dart
-///
-/// Handles all photo/file operations using device local storage.
-/// No cloud needed — photos & receipts are stored in app's private directory.
-/// Stored path (relative) is saved to Firestore as a string field.
+// local_storage_service.dart
+//
+// Handles all photo/file operations using device local storage.
+// No cloud needed — photos & receipts are stored in app's private directory.
+// Stored path (relative) is saved to Firestore as a string field.
 
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -14,7 +14,7 @@ class LocalStorageService {
 
   // ─── Pick & Save Image ───────────────────────────────────────────
 
-  /// Pick a profile photo from gallery, save to appDir/profiles/<uid>.jpg
+  /// Pick a profile photo from gallery, save to `appDir/profiles/{uid}.jpg`.
   /// Returns the saved absolute path, or null if cancelled.
   static Future<String?> pickAndSaveProfilePhoto(String uid) async {
     try {
@@ -32,11 +32,11 @@ class LocalStorageService {
   }
 
   /// Pick a receipt/bukti photo from camera or gallery.
-  /// Saves to appDir/receipts/<bookingId>_<timestamp>.jpg
+  /// Saves to `appDir/receipts/{bookingId}_{timestamp}.jpg`.
   static Future<String?> pickAndSaveReceiptPhoto(
-      String bookingId, {
-      ImageSource source = ImageSource.camera,
-    }) async {
+    String bookingId, {
+    ImageSource source = ImageSource.camera,
+  }) async {
     try {
       final XFile? picked = await _picker.pickImage(
         source: source,
@@ -54,9 +54,9 @@ class LocalStorageService {
 
   /// Pick a device photo for booking (kondisi perangkat).
   static Future<String?> pickAndSaveDevicePhoto(
-      String bookingId, {
-      ImageSource source = ImageSource.camera,
-    }) async {
+    String bookingId, {
+    ImageSource source = ImageSource.camera,
+  }) async {
     try {
       final XFile? picked = await _picker.pickImage(
         source: source,

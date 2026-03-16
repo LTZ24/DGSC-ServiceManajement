@@ -56,6 +56,22 @@ class _StatusScreenState extends State<StatusScreen>
     String serviceId,
     String method,
   ) async {
+    final paymentLabel = _paymentLabel(method);
+    final paymentLabelLower = paymentLabel.toLowerCase();
+    final historyTitle =
+        context.tr('Metode pembayaran dipilih', 'Payment method selected');
+    final historyDescription = context.tr(
+      'Customer memilih metode pembayaran $paymentLabelLower.',
+      'Customer selected $paymentLabelLower as the payment method.',
+    );
+    final notifyTitle =
+        context.tr('Pilihan pembayaran customer', 'Customer payment choice');
+    final notifyMessage = context.tr(
+      'Customer ${serviceData['customer_name'] ?? ''} memilih $paymentLabel untuk servis ${serviceData['service_code'] ?? ''}.',
+      'Customer ${serviceData['customer_name'] ?? ''} selected $paymentLabel for service ${serviceData['service_code'] ?? ''}.',
+    );
+    final snackTitle = historyTitle;
+
     await BackendService.updateService(serviceId, {
       'payment_choice': method,
       'payment_method': method,
@@ -65,24 +81,21 @@ class _StatusScreenState extends State<StatusScreen>
     await BackendService.appendServiceHistory(
       serviceId: serviceId,
       status: 'awaiting_confirmation',
-      title: context.tr('Metode pembayaran dipilih', 'Payment method selected'),
-      description:
-          context.tr('Customer memilih metode pembayaran ${_paymentLabel(method).toLowerCase()}.', 'Customer selected ${_paymentLabel(method).toLowerCase()} as the payment method.'),
+      title: historyTitle,
+      description: historyDescription,
       actor: 'customer',
       meta: {'payment_choice': method},
     );
     await BackendService.notifyAdmins(
-      title: context.tr('Pilihan pembayaran customer', 'Customer payment choice'),
-      message:
-          context.tr('Customer ${serviceData['customer_name'] ?? ''} memilih ${_paymentLabel(method)} untuk servis ${serviceData['service_code'] ?? ''}.', 'Customer ${serviceData['customer_name'] ?? ''} selected ${_paymentLabel(method)} for service ${serviceData['service_code'] ?? ''}.'),
+      title: notifyTitle,
+      message: notifyMessage,
       relatedId: serviceId,
       type: 'payment',
     );
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text('${context.tr('Metode pembayaran dipilih', 'Payment method selected')}: ${_paymentLabel(method)}')),
+      SnackBar(content: Text('$snackTitle: $paymentLabel')),
     );
   }
 
@@ -94,19 +107,25 @@ class _StatusScreenState extends State<StatusScreen>
     if (phone.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Nomor WhatsApp admin belum diatur', 'Admin WhatsApp number has not been set'))),
+        SnackBar(
+            content: Text(context.tr('Nomor WhatsApp admin belum diatur',
+                'Admin WhatsApp number has not been set'))),
       );
       return;
     }
 
     final message = Uri.encodeComponent(
-      context.tr('Halo Admin, saya ingin konfirmasi pembayaran/pengambilan untuk servis ${serviceData['service_code'] ?? ''} (${serviceData['device_brand'] ?? ''} ${serviceData['model'] ?? ''}).', 'Hello Admin, I want to confirm payment/pickup for service ${serviceData['service_code'] ?? ''} (${serviceData['device_brand'] ?? ''} ${serviceData['model'] ?? ''}).'),
+      context.tr(
+          'Halo Admin, saya ingin konfirmasi pembayaran/pengambilan untuk servis ${serviceData['service_code'] ?? ''} (${serviceData['device_brand'] ?? ''} ${serviceData['model'] ?? ''}).',
+          'Hello Admin, I want to confirm payment/pickup for service ${serviceData['service_code'] ?? ''} (${serviceData['device_brand'] ?? ''} ${serviceData['model'] ?? ''}).'),
     );
     final uri = Uri.parse('https://wa.me/$phone?text=$message');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Gagal membuka WhatsApp', 'Failed to open WhatsApp'))),
+        SnackBar(
+            content: Text(context.tr(
+                'Gagal membuka WhatsApp', 'Failed to open WhatsApp'))),
       );
     }
   }
@@ -188,7 +207,8 @@ class _StatusScreenState extends State<StatusScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              context.tr('Pantau status secara real-time', 'Track status in real-time'),
+                              context.tr('Pantau status secara real-time',
+                                  'Track status in real-time'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
@@ -197,7 +217,9 @@ class _StatusScreenState extends State<StatusScreen>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              context.tr('Lihat perkembangan booking, servis, dan pembayaran dalam satu tampilan yang konsisten.', 'View booking, service, and payment progress in one consistent screen.'),
+                              context.tr(
+                                  'Lihat perkembangan booking, servis, dan pembayaran dalam satu tampilan yang konsisten.',
+                                  'View booking, service, and payment progress in one consistent screen.'),
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.88),
                                 height: 1.4,
@@ -228,8 +250,7 @@ class _StatusScreenState extends State<StatusScreen>
                   child: TabBar(
                     controller: _tabController,
                     splashFactory: NoSplash.splashFactory,
-                    overlayColor:
-                        WidgetStateProperty.all(Colors.transparent),
+                    overlayColor: WidgetStateProperty.all(Colors.transparent),
                     indicator: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
@@ -271,9 +292,11 @@ class _StatusScreenState extends State<StatusScreen>
                     if (docs.isEmpty) {
                       return _buildEmptyState(
                         icon: Icons.calendar_today,
-                        title: context.tr('Belum ada booking', 'No bookings yet'),
-                        description:
-                            context.tr('Booking baru akan muncul di sini setelah formulir servis dikirim.', 'New bookings will appear here after the service form is submitted.'),
+                        title:
+                            context.tr('Belum ada booking', 'No bookings yet'),
+                        description: context.tr(
+                            'Booking baru akan muncul di sini setelah formulir servis dikirim.',
+                            'New bookings will appear here after the service form is submitted.'),
                       );
                     }
                     return ListView.builder(
@@ -461,7 +484,8 @@ class _StatusScreenState extends State<StatusScreen>
                                       .isNotEmpty)
                                     _infoRow(
                                       context,
-                                      context.tr('Detail proses', 'Process details'),
+                                      context.tr(
+                                          'Detail proses', 'Process details'),
                                       data['initial_detail'],
                                     ),
                                   if ((data['service_detail'] ?? '')
@@ -469,7 +493,8 @@ class _StatusScreenState extends State<StatusScreen>
                                       .isNotEmpty)
                                     _infoRow(
                                       context,
-                                      context.tr('Detail servis', 'Service details'),
+                                      context.tr(
+                                          'Detail servis', 'Service details'),
                                       data['service_detail'],
                                     ),
                                   if ((data['status_note'] ?? '')
@@ -508,7 +533,8 @@ class _StatusScreenState extends State<StatusScreen>
                                   if (status == 'completed') ...[
                                     const Divider(height: 24),
                                     Text(
-                                      context.tr('Pembayaran & Pengambilan', 'Payment & Pickup'),
+                                      context.tr('Pembayaran & Pengambilan',
+                                          'Payment & Pickup'),
                                       style: Theme.of(context)
                                           .textTheme
                                           .titleSmall
@@ -521,7 +547,8 @@ class _StatusScreenState extends State<StatusScreen>
                                       runSpacing: 8,
                                       children: [
                                         ChoiceChip(
-                                          label: Text(context.tr('Transfer', 'Transfer')),
+                                          label: Text(context.tr(
+                                              'Transfer', 'Transfer')),
                                           selected: paymentChoice == 'transfer',
                                           onSelected: (_) =>
                                               _selectPaymentMethod(
@@ -531,7 +558,8 @@ class _StatusScreenState extends State<StatusScreen>
                                           ),
                                         ),
                                         ChoiceChip(
-                                          label: Text(context.tr('QRIS', 'QRIS')),
+                                          label:
+                                              Text(context.tr('QRIS', 'QRIS')),
                                           selected: paymentChoice == 'qris',
                                           onSelected: (_) =>
                                               _selectPaymentMethod(
@@ -541,7 +569,9 @@ class _StatusScreenState extends State<StatusScreen>
                                           ),
                                         ),
                                         ChoiceChip(
-                                          label: Text(context.tr('Bayar Saat Ambil', 'Pay on Pickup')),
+                                          label: Text(context.tr(
+                                              'Bayar Saat Ambil',
+                                              'Pay on Pickup')),
                                           selected:
                                               paymentChoice == 'cash_on_pickup',
                                           onSelected: (_) =>
@@ -557,7 +587,8 @@ class _StatusScreenState extends State<StatusScreen>
                                     if (paymentChoice == 'transfer')
                                       _paymentBox(
                                         context,
-                                        title: context.tr('Pembayaran Transfer', 'Transfer Payment'),
+                                        title: context.tr('Pembayaran Transfer',
+                                            'Transfer Payment'),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -569,14 +600,16 @@ class _StatusScreenState extends State<StatusScreen>
                                             ),
                                             _infoRow(
                                               context,
-                                                context.tr('No. Rek', 'Account No.'),
+                                              context.tr(
+                                                  'No. Rek', 'Account No.'),
                                               bankAccountNumber.isEmpty
                                                   ? '-'
                                                   : bankAccountNumber,
                                             ),
                                             _infoRow(
                                               context,
-                                                context.tr('Atas Nama', 'Account Name'),
+                                              context.tr(
+                                                  'Atas Nama', 'Account Name'),
                                               bankAccountName.isEmpty
                                                   ? '-'
                                                   : bankAccountName,
@@ -587,10 +620,13 @@ class _StatusScreenState extends State<StatusScreen>
                                     if (paymentChoice == 'qris')
                                       _paymentBox(
                                         context,
-                                        title: context.tr('Pembayaran QRIS', 'QRIS Payment'),
+                                        title: context.tr(
+                                            'Pembayaran QRIS', 'QRIS Payment'),
                                         child: qrisBase64.isEmpty
                                             ? Text(
-                                            context.tr('QRIS toko belum diupload admin.', 'Store QRIS has not been uploaded by admin yet.'),
+                                                context.tr(
+                                                    'QRIS toko belum diupload admin.',
+                                                    'Store QRIS has not been uploaded by admin yet.'),
                                                 style: TextStyle(
                                                     color: mutedColor),
                                               )
@@ -611,7 +647,9 @@ class _StatusScreenState extends State<StatusScreen>
                                                   ),
                                                   const SizedBox(height: 8),
                                                   Text(
-                                                    context.tr('Scan QRIS di atas lalu kirim konfirmasi ke admin.', 'Scan the QRIS above then send confirmation to admin.'),
+                                                    context.tr(
+                                                        'Scan QRIS di atas lalu kirim konfirmasi ke admin.',
+                                                        'Scan the QRIS above then send confirmation to admin.'),
                                                     style: TextStyle(
                                                       fontSize: 12,
                                                       color: mutedColor,
@@ -623,9 +661,13 @@ class _StatusScreenState extends State<StatusScreen>
                                     if (paymentChoice == 'cash_on_pickup')
                                       _paymentBox(
                                         context,
-                                        title: context.tr('Bayar Saat Pengambilan', 'Pay on Pickup'),
+                                        title: context.tr(
+                                            'Bayar Saat Pengambilan',
+                                            'Pay on Pickup'),
                                         child: Text(
-                                          context.tr('Silakan lakukan pembayaran saat perangkat diambil di toko. Gunakan tombol WhatsApp untuk konfirmasi ke admin.', 'Please make the payment when the device is picked up at the store. Use the WhatsApp button to confirm with the admin.'),
+                                          context.tr(
+                                              'Silakan lakukan pembayaran saat perangkat diambil di toko. Gunakan tombol WhatsApp untuk konfirmasi ke admin.',
+                                              'Please make the payment when the device is picked up at the store. Use the WhatsApp button to confirm with the admin.'),
                                           style: TextStyle(color: mutedColor),
                                         ),
                                       ),
@@ -635,8 +677,9 @@ class _StatusScreenState extends State<StatusScreen>
                                       child: OutlinedButton.icon(
                                         onPressed: () => _openWhatsApp(data),
                                         icon: const Icon(Icons.chat),
-                                        label: Text(
-                                            context.tr('Hubungi WhatsApp Admin', 'Contact Admin WhatsApp')),
+                                        label: Text(context.tr(
+                                            'Hubungi WhatsApp Admin',
+                                            'Contact Admin WhatsApp')),
                                       ),
                                     ),
                                   ],
@@ -651,7 +694,9 @@ class _StatusScreenState extends State<StatusScreen>
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            context.tr('Perangkat sudah diambil. Pembayaran telah dicatat.', 'The device has been picked up. Payment has been recorded.'),
+                                            context.tr(
+                                                'Perangkat sudah diambil. Pembayaran telah dicatat.',
+                                                'The device has been picked up. Payment has been recorded.'),
                                             style: TextStyle(color: mutedColor),
                                           ),
                                         ),
@@ -1051,4 +1096,3 @@ class _StatusScreenState extends State<StatusScreen>
     }
   }
 }
-

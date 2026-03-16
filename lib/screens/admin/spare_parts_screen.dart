@@ -16,7 +16,7 @@ class AdminSparePartsScreen extends StatefulWidget {
 class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
   bool _showLowStock = false;
   final _searchCtrl = TextEditingController();
-  late final Stream<QuerySnapshot> _sparePartsStream;
+  late final Stream<QuerySnapshot<Map<String, dynamic>>> _sparePartsStream;
   final currencyFormat =
       NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
 
@@ -32,8 +32,9 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
     super.dispose();
   }
 
-  void _showCreateEditDialog(BuildContext context, {DocumentSnapshot? doc}) {
-    final data = doc != null ? doc.data() : null;
+  void _showCreateEditDialog(BuildContext context,
+      {DocumentSnapshot<Map<String, dynamic>>? doc}) {
+    final data = doc?.data();
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController(text: data?['part_name'] ?? '');
     final categoryCtrl = TextEditingController(text: data?['category'] ?? '');
@@ -63,9 +64,10 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(doc != null
-                    ? context.tr('Edit Spare Part', 'Edit Spare Part')
-                    : context.tr('Tambah Spare Part', 'Add Spare Part'),
+                Text(
+                    doc != null
+                        ? ctx.tr('Edit Spare Part', 'Edit Spare Part')
+                        : ctx.tr('Tambah Spare Part', 'Add Spare Part'),
                     style: Theme.of(ctx)
                         .textTheme
                         .titleLarge
@@ -73,42 +75,51 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                     controller: nameCtrl,
-                    decoration: InputDecoration(labelText: context.tr('Nama Part', 'Part Name')),
-                    validator: (v) => v?.isEmpty == true ? context.tr('Wajib', 'Required') : null),
+                    decoration: InputDecoration(
+                        labelText: context.tr('Nama Part', 'Part Name')),
+                    validator: (v) => v?.isEmpty == true
+                        ? context.tr('Wajib', 'Required')
+                        : null),
                 const SizedBox(height: 12),
                 TextFormField(
                     controller: categoryCtrl,
-                    decoration: InputDecoration(labelText: context.tr('Kategori', 'Category'))),
+                    decoration: InputDecoration(
+                        labelText: context.tr('Kategori', 'Category'))),
                 const SizedBox(height: 12),
                 Row(children: [
                   Expanded(
                       child: TextFormField(
                           controller: stockCtrl,
                           keyboardType: TextInputType.number,
-                          decoration:
-                              InputDecoration(labelText: context.tr('Stok', 'Stock')))),
+                          decoration: InputDecoration(
+                              labelText: context.tr('Stok', 'Stock')))),
                   const SizedBox(width: 12),
                   Expanded(
                       child: TextFormField(
                           controller: minStockCtrl,
                           keyboardType: TextInputType.number,
-                          decoration:
-                              InputDecoration(labelText: context.tr('Min Stok', 'Min Stock')))),
+                          decoration: InputDecoration(
+                              labelText: context.tr('Min Stok', 'Min Stock')))),
                 ]),
                 const SizedBox(height: 12),
                 TextFormField(
                     controller: priceCtrl,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: context.tr('Harga Satuan', 'Unit Price'), prefixText: 'Rp ')),
+                        labelText: context.tr('Harga Satuan', 'Unit Price'),
+                        prefixText: 'Rp ')),
                 const SizedBox(height: 12),
                 TextFormField(
                     controller: supplierCtrl,
-                    decoration: InputDecoration(labelText: context.tr('Supplier', 'Supplier'))),
+                    decoration: InputDecoration(
+                        labelText: context.tr('Supplier', 'Supplier'))),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
+                    final snackLabel = doc != null
+                        ? ctx.tr('Diperbarui', 'Updated')
+                        : ctx.tr('Ditambahkan', 'Added');
                     final partData = {
                       'part_name': nameCtrl.text,
                       'category': categoryCtrl.text,
@@ -122,12 +133,10 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
                     } else {
                       await BackendService.addSparePart(partData);
                     }
-                    if (ctx.mounted) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                          content: Text(
-                              doc != null ? context.tr('Diperbarui', 'Updated') : context.tr('Ditambahkan', 'Added'))));
-                    }
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(ctx)
+                        .showSnackBar(SnackBar(content: Text(snackLabel)));
                   },
                   child: Text(context.tr('Simpan', 'Save')),
                 ),
@@ -159,13 +168,14 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
         onPressed: () => _showCreateEditDialog(context),
         child: const Icon(Icons.add),
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _sparePartsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          var docs = snapshot.data?.docs ?? [];
+          var docs = snapshot.data?.docs ??
+              <QueryDocumentSnapshot<Map<String, dynamic>>>[];
           if (_showLowStock) {
             docs = docs.where((d) {
               final data = d.data();
@@ -194,15 +204,17 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
                 controller: _searchCtrl,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: context.tr('Cari nama, kategori...', 'Search name, category...'),
-                  prefixIcon: const Icon(Icons.search)),
+                    hintText: context.tr(
+                        'Cari nama, kategori...', 'Search name, category...'),
+                    prefixIcon: const Icon(Icons.search)),
               ),
             ),
             Expanded(
               child: docs.isEmpty
                   ? Center(
-                    child: Text(context.tr('Tidak ada spare part', 'No spare parts'),
-                      style: const TextStyle(color: Colors.grey)))
+                      child: Text(
+                          context.tr('Tidak ada spare part', 'No spare parts'),
+                          style: const TextStyle(color: Colors.grey)))
                   : ListView.builder(
                       padding: const EdgeInsets.all(12),
                       itemCount: docs.length,
@@ -256,4 +268,3 @@ class _AdminSparePartsScreenState extends State<AdminSparePartsScreen> {
     );
   }
 }
-

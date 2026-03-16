@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:blue_thermal_helper/blue_thermal_helper.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart' show PosAlign;
@@ -9,6 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 class PpobPrintService {
   static final BlueThermalHelper _printer = BlueThermalHelper.instance;
+
+  static String _twoDigits(int n) => n.toString().padLeft(2, '0');
 
   static const Set<String> _phoneTargetCategoryIds = {
     'pulsa_data',
@@ -344,8 +345,7 @@ class PpobPrintService {
   }
 
   static String _formatDate(DateTime value) {
-    final two = (int n) => n.toString().padLeft(2, '0');
-    return '${two(value.day)}/${two(value.month)}/${value.year} ${two(value.hour)}:${two(value.minute)}';
+    return '${_twoDigits(value.day)}/${_twoDigits(value.month)}/${value.year} ${_twoDigits(value.hour)}:${_twoDigits(value.minute)}';
   }
 
   static String _formatMoney(dynamic value) {

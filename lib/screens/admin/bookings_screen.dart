@@ -36,12 +36,23 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
             tooltip: context.tr('Filter', 'Filter'),
             onSelected: (val) => setState(() => _statusFilter = val),
             itemBuilder: (_) => [
-              PopupMenuItem(value: null, child: Text(context.tr('Semua', 'All'))),
-              PopupMenuItem(value: 'pending', child: Text(context.tr('Pending', 'Pending'))),
-              PopupMenuItem(value: 'approved', child: Text(context.tr('Disetujui', 'Approved'))),
-              PopupMenuItem(value: 'rejected', child: Text(context.tr('Ditolak', 'Rejected'))),
-              PopupMenuItem(value: 'converted', child: Text(context.tr('Dikonversi', 'Converted'))),
-              PopupMenuItem(value: 'cancelled', child: Text(context.tr('Dibatalkan', 'Cancelled'))),
+              PopupMenuItem(
+                  value: null, child: Text(context.tr('Semua', 'All'))),
+              PopupMenuItem(
+                  value: 'pending',
+                  child: Text(context.tr('Pending', 'Pending'))),
+              PopupMenuItem(
+                  value: 'approved',
+                  child: Text(context.tr('Disetujui', 'Approved'))),
+              PopupMenuItem(
+                  value: 'rejected',
+                  child: Text(context.tr('Ditolak', 'Rejected'))),
+              PopupMenuItem(
+                  value: 'converted',
+                  child: Text(context.tr('Dikonversi', 'Converted'))),
+              PopupMenuItem(
+                  value: 'cancelled',
+                  child: Text(context.tr('Dibatalkan', 'Cancelled'))),
             ],
           ),
         ],
@@ -59,17 +70,17 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('${context.tr('Error', 'Error')}: ${snapshot.error}'));
+            return Center(
+                child:
+                    Text('${context.tr('Error', 'Error')}: ${snapshot.error}'));
           }
           var docs = sourceDocs;
           if (_statusFilter != null) {
-            docs = docs
-                .where((d) {
-                  final baseStatus = (d.data() as Map)['status']?.toString();
-                  final effectiveStatus = _statusOverrides[d.id] ?? baseStatus;
-                  return effectiveStatus == _statusFilter;
-                })
-                .toList();
+            docs = docs.where((d) {
+              final baseStatus = (d.data() as Map)['status']?.toString();
+              final effectiveStatus = _statusOverrides[d.id] ?? baseStatus;
+              return effectiveStatus == _statusFilter;
+            }).toList();
           }
           if (docs.isEmpty) {
             final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -218,29 +229,43 @@ class _BookingCard extends StatelessWidget {
 
   Future<void> _updateStatus(BuildContext ctx, String status) async {
     final previousStatus = (data['status'] ?? 'pending').toString();
+    final customerId = (data['customer_id'] ?? '').toString();
+    final brand = (data['brand'] ?? '').toString();
+    final model = (data['model'] ?? '').toString();
+    final title = status == 'approved'
+        ? ctx.tr('Booking diterima', 'Booking approved')
+        : ctx.tr('Booking ditolak', 'Booking rejected');
+    final message = status == 'approved'
+        ? ctx.tr(
+            'Booking $brand $model telah diterima admin.',
+            'Booking $brand $model has been approved by admin.',
+          )
+        : ctx.tr(
+            'Booking $brand $model ditolak admin. Silakan cek detail atau hubungi toko.',
+            'Booking $brand $model was rejected by admin. Please check the details or contact the store.',
+          );
+
     onStatusChanged(status);
     try {
       await BackendService.updateBookingStatus(docId, status);
       await BackendService.addNotification(
-        userId: (data['customer_id'] ?? '').toString(),
+        userId: customerId,
         type: 'booking',
-        title: status == 'approved'
-            ? ctx.tr('Booking diterima', 'Booking approved')
-            : ctx.tr('Booking ditolak', 'Booking rejected'),
-        message: status == 'approved'
-            ? ctx.tr('Booking ${data['brand'] ?? ''} ${data['model'] ?? ''} telah diterima admin.', 'Booking ${data['brand'] ?? ''} ${data['model'] ?? ''} has been approved by admin.')
-            : ctx.tr('Booking ${data['brand'] ?? ''} ${data['model'] ?? ''} ditolak admin. Silakan cek detail atau hubungi toko.', 'Booking ${data['brand'] ?? ''} ${data['model'] ?? ''} was rejected by admin. Please check the details or contact the store.'),
+        title: title,
+        message: message,
         relatedId: docId,
       );
       if (ctx.mounted) {
-        ScaffoldMessenger.of(ctx)
-            .showSnackBar(SnackBar(content: Text('${ctx.tr('Status', 'Status')}: $status')));
+        ScaffoldMessenger.of(ctx).showSnackBar(
+            SnackBar(content: Text('${ctx.tr('Status', 'Status')}: $status')));
       }
     } catch (e) {
       onStatusChanged(previousStatus);
       if (ctx.mounted) {
         ScaffoldMessenger.of(ctx).showSnackBar(
-          SnackBar(content: Text('${ctx.tr('Gagal mengubah status booking', 'Failed to change booking status')}: $e')),
+          SnackBar(
+              content: Text(
+                  '${ctx.tr('Gagal mengubah status booking', 'Failed to change booking status')}: $e')),
         );
       }
     }
@@ -248,21 +273,37 @@ class _BookingCard extends StatelessWidget {
 
   Future<void> _convertToService(BuildContext ctx) async {
     final confirm = await showDialog<bool>(
-        context: ctx,
-        builder: (_) => AlertDialog(
-              title: Text(ctx.tr('Buat Servis', 'Create Service')),
-              content: Text(
-                  ctx.tr('Konversi booking ${data["brand"]} ${data["model"]} ke servis?', 'Convert booking ${data["brand"]} ${data["model"]} to a service?')),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(ctx.tr('Batal', 'Cancel'))),
-                ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text(ctx.tr('Create', 'Create'))),
-              ],
-            ));
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(dialogCtx.tr('Buat Servis', 'Create Service')),
+        content: Text(dialogCtx.tr(
+            'Konversi booking ${data["brand"]} ${data["model"]} ke servis?',
+            'Convert booking ${data["brand"]} ${data["model"]} to a service?')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: Text(dialogCtx.tr('Batal', 'Cancel'))),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              child: Text(dialogCtx.tr('Create', 'Create'))),
+        ],
+      ),
+    );
+    if (!ctx.mounted) return;
     if (confirm != true) return;
+
+    final customerId = (data['customer_id'] ?? '').toString();
+    final brand = (data['brand'] ?? '').toString();
+    final model = (data['model'] ?? '').toString();
+    final notificationTitle = ctx.tr(
+        'Booking diproses menjadi servis', 'Booking converted to service');
+    final notificationMessage = ctx.tr(
+      'Booking $brand $model sudah dibuat menjadi data servis aktif.',
+      'Booking $brand $model has been created as an active service.',
+    );
+    final successMessage =
+        ctx.tr('Servis berhasil dibuat', 'Service created successfully');
+
     onStatusChanged('converted');
 
     await BackendService.addService({
@@ -279,17 +320,16 @@ class _BookingCard extends StatelessWidget {
     });
     await BackendService.updateBookingStatus(docId, 'converted');
     await BackendService.addNotification(
-      userId: (data['customer_id'] ?? '').toString(),
+      userId: customerId,
       type: 'booking',
-      title: ctx.tr('Booking diproses menjadi servis', 'Booking converted to service'),
-      message:
-          ctx.tr('Booking ${data['brand'] ?? ''} ${data['model'] ?? ''} sudah dibuat menjadi data servis aktif.', 'Booking ${data['brand'] ?? ''} ${data['model'] ?? ''} has been created as an active service.'),
+      title: notificationTitle,
+      message: notificationMessage,
       relatedId: docId,
     );
 
     if (ctx.mounted) {
       ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-        content: Text(ctx.tr('Servis berhasil dibuat', 'Service created successfully')),
+        content: Text(successMessage),
         backgroundColor: AppTheme.successColor,
       ));
     }
@@ -297,22 +337,25 @@ class _BookingCard extends StatelessWidget {
 
   Future<void> _delete(BuildContext ctx) async {
     final confirm = await showDialog<bool>(
-        context: ctx,
-        builder: (_) => AlertDialog(
-              title: Text(ctx.tr('Hapus Booking', 'Delete Booking')),
-              content: Text(ctx.tr('Yakin ingin menghapus?', 'Are you sure you want to delete this?')),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(ctx.tr('Batal', 'Cancel'))),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.dangerColor),
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: Text(ctx.tr('Hapus', 'Delete')),
-                ),
-              ],
-            ));
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        title: Text(dialogCtx.tr('Hapus Booking', 'Delete Booking')),
+        content: Text(dialogCtx.tr(
+            'Yakin ingin menghapus?', 'Are you sure you want to delete this?')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: Text(dialogCtx.tr('Batal', 'Cancel'))),
+          ElevatedButton(
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppTheme.dangerColor),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: Text(dialogCtx.tr('Hapus', 'Delete')),
+          ),
+        ],
+      ),
+    );
+    if (!ctx.mounted) return;
     if (confirm != true) return;
     await BackendService.deleteBooking(docId);
     if (ctx.mounted) {
@@ -366,13 +409,10 @@ class _CustomerAccountInfo extends StatelessWidget {
         if (name.isNotEmpty)
           Text(name, style: const TextStyle(fontSize: 13, color: Colors.grey)),
         if (phone.isNotEmpty)
-          Text(phone,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(phone, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         if (email.isNotEmpty)
-          Text(email,
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          Text(email, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );
   }
 }
-

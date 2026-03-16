@@ -102,14 +102,16 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                         customerName = cd['name'];
                         customerPhone = cd['phone'];
                       },
-                      validator: (v) => v == null ? context.tr('Pilih pelanggan', 'Select a customer') : null,
+                      validator: (v) => v == null
+                          ? context.tr('Pilih pelanggan', 'Select a customer')
+                          : null,
                     );
                   },
                 ),
                 const SizedBox(height: 12),
                 StatefulBuilder(
                   builder: (ctx3, setSt) => DropdownButtonFormField<String>(
-                    value: deviceType,
+                    initialValue: deviceType,
                     decoration: InputDecoration(
                       labelText: context.tr('Jenis Perangkat', 'Device Type'),
                     ),
@@ -129,29 +131,39 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: brandCtrl,
-                  decoration: InputDecoration(labelText: context.tr('Merek', 'Brand')),
-                  validator: (v) => v?.isEmpty == true ? context.tr('Wajib', 'Required') : null,
+                  decoration:
+                      InputDecoration(labelText: context.tr('Merek', 'Brand')),
+                  validator: (v) => v?.isEmpty == true
+                      ? context.tr('Wajib', 'Required')
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: modelCtrl,
-                  decoration: InputDecoration(labelText: context.tr('Model', 'Model')),
-                  validator: (v) => v?.isEmpty == true ? context.tr('Wajib', 'Required') : null,
+                  decoration:
+                      InputDecoration(labelText: context.tr('Model', 'Model')),
+                  validator: (v) => v?.isEmpty == true
+                      ? context.tr('Wajib', 'Required')
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: problemCtrl,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    labelText: context.tr('Keluhan / Masalah', 'Issue / Problem'),
+                    labelText:
+                        context.tr('Keluhan / Masalah', 'Issue / Problem'),
                     alignLabelWithHint: true,
                   ),
-                  validator: (v) => v?.isEmpty == true ? context.tr('Wajib', 'Required') : null,
+                  validator: (v) => v?.isEmpty == true
+                      ? context.tr('Wajib', 'Required')
+                      : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: techCtrl,
-                  decoration: InputDecoration(labelText: context.tr('Teknisi', 'Technician')),
+                  decoration: InputDecoration(
+                      labelText: context.tr('Teknisi', 'Technician')),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
@@ -171,7 +183,9 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                     if (ctx.mounted) {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text(context.tr('Servis dibuat', 'Service created'))),
+                        SnackBar(
+                            content: Text(context.tr(
+                                'Servis dibuat', 'Service created'))),
                       );
                     }
                   },
@@ -196,14 +210,25 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
             icon: const Icon(Icons.filter_list, color: Colors.white),
             onSelected: (val) => setState(() => _statusFilter = val),
             itemBuilder: (_) => [
-              PopupMenuItem(value: null, child: Text(context.tr('Semua', 'All'))),
-              PopupMenuItem(value: 'pending', child: Text(context.tr('Menunggu', 'Pending'))),
-              PopupMenuItem(value: 'in_progress', child: Text(context.tr('Diproses', 'In Progress'))),
-              PopupMenuItem(value: 'completed', child: Text(context.tr('Selesai', 'Completed'))),
-              PopupMenuItem(value: 'failed', child: Text(context.tr('Gagal', 'Failed'))),
-              PopupMenuItem(value: 'cancelled', child: Text(context.tr('Dibatalkan', 'Cancelled'))),
               PopupMenuItem(
-                  value: 'sudah_diambil', child: Text(context.tr('Sudah Diambil', 'Picked Up'))),
+                  value: null, child: Text(context.tr('Semua', 'All'))),
+              PopupMenuItem(
+                  value: 'pending',
+                  child: Text(context.tr('Menunggu', 'Pending'))),
+              PopupMenuItem(
+                  value: 'in_progress',
+                  child: Text(context.tr('Diproses', 'In Progress'))),
+              PopupMenuItem(
+                  value: 'completed',
+                  child: Text(context.tr('Selesai', 'Completed'))),
+              PopupMenuItem(
+                  value: 'failed', child: Text(context.tr('Gagal', 'Failed'))),
+              PopupMenuItem(
+                  value: 'cancelled',
+                  child: Text(context.tr('Dibatalkan', 'Cancelled'))),
+              PopupMenuItem(
+                  value: 'sudah_diambil',
+                  child: Text(context.tr('Sudah Diambil', 'Picked Up'))),
             ],
           ),
         ],
@@ -227,14 +252,13 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
           var docs = sourceDocs;
           docs = docs.where((d) => !_deletedServiceIds.contains(d.id)).toList();
           if (_statusFilter != null) {
-            docs = docs
-                .where((d) {
-                  final base = Map<String, dynamic>.from(d.data());
-                  final override = _serviceOverrides[d.id];
-                  final effectiveStatus = (override?['status'] ?? base['status'])?.toString();
-                  return effectiveStatus == _statusFilter;
-                })
-                .toList();
+            docs = docs.where((d) {
+              final base = Map<String, dynamic>.from(d.data());
+              final override = _serviceOverrides[d.id];
+              final effectiveStatus =
+                  (override?['status'] ?? base['status'])?.toString();
+              return effectiveStatus == _statusFilter;
+            }).toList();
           }
           final query = _searchCtrl.text.toLowerCase();
           if (query.isNotEmpty) {
@@ -263,7 +287,8 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                   controller: _searchCtrl,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: context.tr('Cari nama, model, kode...', 'Search name, model, code...'),
+                    hintText: context.tr('Cari nama, model, kode...',
+                        'Search name, model, code...'),
                     prefixIcon: const Icon(Icons.search),
                   ),
                 ),
@@ -298,7 +323,8 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                                 if (patch == null) {
                                   _serviceOverrides.remove(doc.id);
                                 } else {
-                                  final existing = _serviceOverrides[doc.id] ?? <String, dynamic>{};
+                                  final existing = _serviceOverrides[doc.id] ??
+                                      <String, dynamic>{};
                                   existing.addAll(patch);
                                   _serviceOverrides[doc.id] = existing;
                                 }
@@ -385,7 +411,8 @@ class _ServiceCard extends StatelessWidget {
             if ((data['problem'] ?? '').toString().isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: _infoRow(context, context.tr('Keluhan', 'Issue'), data['problem'].toString()),
+                child: _infoRow(context, context.tr('Keluhan', 'Issue'),
+                    data['problem'].toString()),
               ),
             if ((data['initial_detail'] ?? '').toString().isNotEmpty)
               Padding(
@@ -455,7 +482,8 @@ class _ServiceCard extends StatelessWidget {
                 child: _infoRow(
                   context,
                   context.tr('Pembayaran', 'Payment'),
-                  _paymentLabel(context, (data['payment_choice'] ?? '').toString()),
+                  _paymentLabel(
+                      context, (data['payment_choice'] ?? '').toString()),
                 ),
               ),
             const SizedBox(height: 12),
@@ -589,10 +617,38 @@ class _ServiceCard extends StatelessWidget {
   }
 
   Future<void> _handlePrimaryAction(BuildContext context, String status) async {
+    final failedLabel = context.tr('Gagal', 'Failed');
+
     switch (status) {
       case 'pending':
         final result = await _showProcessDialog(context);
         if (result == null) return;
+        if (!context.mounted) return;
+
+        final customerId = (data['customer_id'] ?? '').toString();
+        final serviceCode = (data['service_code'] ?? '').toString();
+        final noteText = _composeNote(context, result['note'].toString());
+        final historyTitle =
+            context.tr('Servis mulai diproses', 'Service processing started');
+        final historyDefaultDescription = context.tr(
+          'Servis mulai dikerjakan oleh admin/teknisi.',
+          'The service has started being worked on by admin/technician.',
+        );
+        final historyDescription =
+            ((result['detail'] ?? '').toString().trim().isNotEmpty)
+                ? result['detail'].toString()
+                : historyDefaultDescription;
+        final customerTitle =
+            context.tr('Servis sedang diproses', 'Service is in progress');
+        final customerMessage = context.tr(
+          'Servis $serviceCode sudah masuk tahap diproses. $noteText',
+          'Service $serviceCode has entered the in-progress stage. $noteText',
+        );
+        final snackSuccess = context.tr(
+          'Servis masuk tahap diproses',
+          'Service moved to in-progress stage',
+        );
+
         final previousData = Map<String, dynamic>.from(data);
         onDataChanged({
           'status': 'in_progress',
@@ -603,44 +659,41 @@ class _ServiceCard extends StatelessWidget {
           'payment_status': 'pending',
         });
         try {
-        await BackendService.updateService(docId, {
-          'status': 'in_progress',
-          'initial_detail': result['detail'],
-          'estimated_cost': result['estimated_cost'],
-          'technician': result['technician'],
-          'status_note': result['note'],
-          'payment_status': 'pending',
-        });
-        await BackendService.appendServiceHistory(
-          serviceId: docId,
-          status: 'in_progress',
-          title: context.tr('Servis mulai diproses', 'Service processing started'),
-          description: ((result['detail'] ?? '').toString().trim().isNotEmpty)
-              ? result['detail'].toString()
-              : context.tr('Servis mulai dikerjakan oleh admin/teknisi.', 'The service has started being worked on by admin/technician.'),
-          actor: 'admin',
-          meta: {
+          await BackendService.updateService(docId, {
+            'status': 'in_progress',
+            'initial_detail': result['detail'],
             'estimated_cost': result['estimated_cost'],
             'technician': result['technician'],
-          },
-        );
-        await BackendService.notifyServiceCustomer(
-          customerId: (data['customer_id'] ?? '').toString(),
-          serviceId: docId,
-          title: context.tr('Servis sedang diproses', 'Service is in progress'),
-          message:
-                context.tr('Servis ${data['service_code'] ?? ''} sudah masuk tahap diproses. ${_composeNote(context, result['note'].toString())}', 'Service ${data['service_code'] ?? ''} has entered the in-progress stage. ${_composeNote(context, result['note'].toString())}'),
-        );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.tr('Servis masuk tahap diproses', 'Service moved to in-progress stage'))),
+            'status_note': result['note'],
+            'payment_status': 'pending',
+          });
+          await BackendService.appendServiceHistory(
+            serviceId: docId,
+            status: 'in_progress',
+            title: historyTitle,
+            description: historyDescription,
+            actor: 'admin',
+            meta: {
+              'estimated_cost': result['estimated_cost'],
+              'technician': result['technician'],
+            },
           );
-        }
+          await BackendService.notifyServiceCustomer(
+            customerId: customerId,
+            serviceId: docId,
+            title: customerTitle,
+            message: customerMessage,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(snackSuccess)),
+            );
+          }
         } catch (e) {
           onDataChanged(previousData);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${context.tr('Gagal', 'Failed')}: $e')),
+              SnackBar(content: Text('$failedLabel: $e')),
             );
           }
         }
@@ -648,6 +701,26 @@ class _ServiceCard extends StatelessWidget {
       case 'in_progress':
         final result = await _showCompleteDialog(context);
         if (result == null) return;
+        if (!context.mounted) return;
+
+        final customerId = (data['customer_id'] ?? '').toString();
+        final serviceCode = (data['service_code'] ?? '').toString();
+        final historyTitle = context.tr('Servis selesai', 'Service completed');
+        final historyDefaultDescription = context.tr(
+            'Servis telah selesai dikerjakan.',
+            'The service has been completed.');
+        final historyDescription =
+            ((result['detail'] ?? '').toString().trim().isNotEmpty)
+                ? result['detail'].toString()
+                : historyDefaultDescription;
+        final customerTitle = historyTitle;
+        final customerMessage = context.tr(
+          'Servis $serviceCode selesai diproses. Silakan cek detail servis dan pilih metode pembayaran.',
+          'Service $serviceCode has been completed. Please review the details and choose a payment method.',
+        );
+        final snackSuccess = context.tr(
+            'Servis ditandai selesai', 'Service marked as completed');
+
         final previousData = Map<String, dynamic>.from(data);
         onDataChanged({
           'status': 'completed',
@@ -657,43 +730,40 @@ class _ServiceCard extends StatelessWidget {
           'payment_status': 'pending',
         });
         try {
-        await BackendService.updateService(docId, {
-          'status': 'completed',
-          'service_detail': result['detail'],
-          'status_note': result['note'],
-          'cost': result['final_cost'],
-          'payment_status': 'pending',
-          'completed_at': FieldValue.serverTimestamp(),
-        });
-        await BackendService.appendServiceHistory(
-          serviceId: docId,
-          status: 'completed',
-          title: context.tr('Servis selesai', 'Service completed'),
-          description: ((result['detail'] ?? '').toString().trim().isNotEmpty)
-              ? result['detail'].toString()
-            : context.tr('Servis telah selesai dikerjakan.', 'The service has been completed.'),
-          actor: 'admin',
-          meta: {
-            'final_cost': result['final_cost'],
-          },
-        );
-        await BackendService.notifyServiceCustomer(
-          customerId: (data['customer_id'] ?? '').toString(),
-          serviceId: docId,
-          title: context.tr('Servis selesai', 'Service completed'),
-          message:
-              context.tr('Servis ${data['service_code'] ?? ''} selesai diproses. Silakan cek detail servis dan pilih metode pembayaran.', 'Service ${data['service_code'] ?? ''} has been completed. Please review the details and choose a payment method.'),
-        );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.tr('Servis ditandai selesai', 'Service marked as completed'))),
+          await BackendService.updateService(docId, {
+            'status': 'completed',
+            'service_detail': result['detail'],
+            'status_note': result['note'],
+            'cost': result['final_cost'],
+            'payment_status': 'pending',
+            'completed_at': FieldValue.serverTimestamp(),
+          });
+          await BackendService.appendServiceHistory(
+            serviceId: docId,
+            status: 'completed',
+            title: historyTitle,
+            description: historyDescription,
+            actor: 'admin',
+            meta: {
+              'final_cost': result['final_cost'],
+            },
           );
-        }
+          await BackendService.notifyServiceCustomer(
+            customerId: customerId,
+            serviceId: docId,
+            title: customerTitle,
+            message: customerMessage,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(snackSuccess)),
+            );
+          }
         } catch (e) {
           onDataChanged(previousData);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${context.tr('Gagal', 'Failed')}: $e')),
+              SnackBar(content: Text('$failedLabel: $e')),
             );
           }
         }
@@ -701,6 +771,21 @@ class _ServiceCard extends StatelessWidget {
       case 'completed':
         final result = await _showPickupDialog(context);
         if (result == null) return;
+        if (!context.mounted) return;
+
+        final customerId = (data['customer_id'] ?? '').toString();
+        final serviceCode = (data['service_code'] ?? '').toString();
+        final customerTitle =
+            context.tr('Servis sudah diambil', 'Service has been picked up');
+        final customerMessage = context.tr(
+          'Perangkat untuk servis $serviceCode sudah diambil. Transaksi sudah dicatat ke keuangan.',
+          'The device for service $serviceCode has been picked up. The transaction has been recorded in finance.',
+        );
+        final snackSuccess = context.tr(
+          'Pengambilan selesai dan masuk keuangan',
+          'Pickup completed and recorded in finance',
+        );
+
         final previousData = Map<String, dynamic>.from(data);
         onDataChanged({
           'status': 'sudah_diambil',
@@ -708,32 +793,31 @@ class _ServiceCard extends StatelessWidget {
           'payment_choice': result['payment_method'].toString(),
         });
         try {
-        await BackendService.markServicePickedUp(
-          serviceId: docId,
-          serviceData: data,
-          paymentMethod: result['payment_method'].toString(),
-          amount: (result['amount'] as double?) ?? 0.0,
-        );
-        await BackendService.notifyServiceCustomer(
-          customerId: (data['customer_id'] ?? '').toString(),
-          serviceId: docId,
-          title: context.tr('Servis sudah diambil', 'Service has been picked up'),
-          message:
-              context.tr('Perangkat untuk servis ${data['service_code'] ?? ''} sudah diambil. Transaksi sudah dicatat ke keuangan.', 'The device for service ${data['service_code'] ?? ''} has been picked up. The transaction has been recorded in finance.'),
-        );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.tr('Pengambilan selesai dan masuk keuangan', 'Pickup completed and recorded in finance')),
-              backgroundColor: AppTheme.successColor,
-            ),
+          await BackendService.markServicePickedUp(
+            serviceId: docId,
+            serviceData: data,
+            paymentMethod: result['payment_method'].toString(),
+            amount: (result['amount'] as double?) ?? 0.0,
           );
-        }
+          await BackendService.notifyServiceCustomer(
+            customerId: customerId,
+            serviceId: docId,
+            title: customerTitle,
+            message: customerMessage,
+          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(snackSuccess),
+                backgroundColor: AppTheme.successColor,
+              ),
+            );
+          }
         } catch (e) {
           onDataChanged(previousData);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${context.tr('Gagal', 'Failed')}: $e')),
+              SnackBar(content: Text('$failedLabel: $e')),
             );
           }
         }
@@ -746,23 +830,25 @@ class _ServiceCard extends StatelessWidget {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(context.tr('Hapus Servis', 'Delete Service')),
-          content: Text(context.tr('Yakin ingin menghapus data servis ini?', 'Are you sure you want to delete this service data?')),
+          title: Text(ctx.tr('Hapus Servis', 'Delete Service')),
+          content: Text(ctx.tr('Yakin ingin menghapus data servis ini?',
+              'Are you sure you want to delete this service data?')),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.tr('Batal', 'Cancel')),
+              child: Text(ctx.tr('Batal', 'Cancel')),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.dangerColor,
               ),
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text(context.tr('Hapus', 'Delete')),
+              child: Text(ctx.tr('Hapus', 'Delete')),
             ),
           ],
         ),
       );
+      if (!context.mounted) return;
       if (confirm == true) {
         onDeleted();
         await BackendService.deleteService(docId);
@@ -772,6 +858,25 @@ class _ServiceCard extends StatelessWidget {
 
     final note = await _showStatusNoteDialog(context, value);
     if (note == null) return;
+    if (!context.mounted) return;
+
+    final customerId = (data['customer_id'] ?? '').toString();
+    final serviceCode = (data['service_code'] ?? '').toString();
+    final statusTitle = _statusTitle(context, value);
+    final statusLabel = _statusLabel(context, value);
+    final statusLabelLower = statusLabel.toLowerCase();
+    final historyDescription = note.trim().isEmpty
+        ? context.tr(
+            'Status diperbarui oleh admin.', 'Status updated by admin.')
+        : note;
+    final serviceStatusLabel = context.tr('Status servis', 'Service status');
+    final updatedToLabel = context.tr('diperbarui menjadi', 'updated to');
+    final noteText = _composeNote(context, note);
+    final notifyMessage =
+        '$serviceStatusLabel $serviceCode $updatedToLabel $statusLabelLower. $noteText';
+    final snackStatusChangedPrefix =
+        context.tr('Status diubah ke', 'Status changed to');
+    final failedLabel = context.tr('Gagal', 'Failed');
 
     final previousData = Map<String, dynamic>.from(data);
     onDataChanged({
@@ -787,29 +892,28 @@ class _ServiceCard extends StatelessWidget {
       await BackendService.appendServiceHistory(
         serviceId: docId,
         status: value,
-        title: _statusTitle(context, value),
-        description: note.trim().isEmpty ? context.tr('Status diperbarui oleh admin.', 'Status updated by admin.') : note,
+        title: statusTitle,
+        description: historyDescription,
         actor: 'admin',
       );
 
       await BackendService.notifyServiceCustomer(
-        customerId: (data['customer_id'] ?? '').toString(),
+        customerId: customerId,
         serviceId: docId,
-        title: _statusTitle(context, value),
-        message:
-            '${context.tr('Status servis', 'Service status')} ${data['service_code'] ?? ''} ${context.tr('diperbarui menjadi', 'updated to')} ${_statusLabel(context, value).toLowerCase()}. ${_composeNote(context, note)}',
+        title: statusTitle,
+        message: notifyMessage,
       );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.tr('Status diubah ke', 'Status changed to')} ${_statusLabel(context, value)}')),
+          SnackBar(content: Text('$snackStatusChangedPrefix $statusLabel')),
         );
       }
     } catch (e) {
       onDataChanged(previousData);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.tr('Gagal', 'Failed')}: $e')),
+          SnackBar(content: Text('$failedLabel: $e')),
         );
       }
     }
@@ -888,17 +992,20 @@ class _ServiceCard extends StatelessWidget {
               children: [
                 TextFormField(
                   controller: techCtrl,
-                  decoration: InputDecoration(labelText: context.tr('Teknisi', 'Technician')),
+                  decoration: InputDecoration(
+                      labelText: context.tr('Teknisi', 'Technician')),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: detailCtrl,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    labelText: context.tr('Detail awal servis (opsional)', 'Initial service details (optional)'),
+                    labelText: context.tr('Detail awal servis (opsional)',
+                        'Initial service details (optional)'),
                     alignLabelWithHint: true,
-                    hintText:
-                        context.tr('Contoh: cek mesin, bongkar unit, tunggu spare part', 'Example: inspect engine, disassemble unit, wait for spare part'),
+                    hintText: context.tr(
+                        'Contoh: cek mesin, bongkar unit, tunggu spare part',
+                        'Example: inspect engine, disassemble unit, wait for spare part'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -906,7 +1013,8 @@ class _ServiceCard extends StatelessWidget {
                   controller: estimateCtrl,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: context.tr('Estimasi harga (opsional)', 'Estimated price (optional)'),
+                    labelText: context.tr('Estimasi harga (opsional)',
+                        'Estimated price (optional)'),
                     prefixText: 'Rp ',
                   ),
                 ),
@@ -915,7 +1023,8 @@ class _ServiceCard extends StatelessWidget {
                   controller: noteCtrl,
                   maxLines: 2,
                   decoration: InputDecoration(
-                    labelText: context.tr('Catatan ke customer (opsional)', 'Note to customer (optional)'),
+                    labelText: context.tr('Catatan ke customer (opsional)',
+                        'Note to customer (optional)'),
                     alignLabelWithHint: true,
                   ),
                 ),
@@ -976,10 +1085,12 @@ class _ServiceCard extends StatelessWidget {
                   controller: detailCtrl,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    labelText: context.tr('Detail pekerjaan servis', 'Service work details'),
+                    labelText: context.tr(
+                        'Detail pekerjaan servis', 'Service work details'),
                     alignLabelWithHint: true,
-                    hintText:
-                        context.tr('Contoh: ganti IC charger, bersihkan mesin, update software', 'Example: replace charging IC, clean engine, update software'),
+                    hintText: context.tr(
+                        'Contoh: ganti IC charger, bersihkan mesin, update software',
+                        'Example: replace charging IC, clean engine, update software'),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -987,7 +1098,8 @@ class _ServiceCard extends StatelessWidget {
                   controller: totalCtrl,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: context.tr('Total harga final', 'Final total price'),
+                    labelText:
+                        context.tr('Total harga final', 'Final total price'),
                     prefixText: 'Rp ',
                   ),
                 ),
@@ -996,7 +1108,9 @@ class _ServiceCard extends StatelessWidget {
                   controller: noteCtrl,
                   maxLines: 2,
                   decoration: InputDecoration(
-                    labelText: context.tr('Info tambahan ke customer (opsional)', 'Additional info to customer (optional)'),
+                    labelText: context.tr(
+                        'Info tambahan ke customer (opsional)',
+                        'Additional info to customer (optional)'),
                     alignLabelWithHint: true,
                   ),
                 ),
@@ -1046,18 +1160,21 @@ class _ServiceCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<String>(
-                value: paymentMethod,
-                decoration:
-                    InputDecoration(labelText: context.tr('Metode pembayaran', 'Payment method')),
+                initialValue: paymentMethod,
+                decoration: InputDecoration(
+                    labelText:
+                        context.tr('Metode pembayaran', 'Payment method')),
                 items: [
                   DropdownMenuItem(
                     value: 'transfer',
                     child: Text(context.tr('Transfer Bank', 'Bank Transfer')),
                   ),
-                  DropdownMenuItem(value: 'qris', child: Text(context.tr('QRIS', 'QRIS'))),
+                  DropdownMenuItem(
+                      value: 'qris', child: Text(context.tr('QRIS', 'QRIS'))),
                   DropdownMenuItem(
                     value: 'cash_on_pickup',
-                    child: Text(context.tr('Bayar Saat Ambil', 'Pay on Pickup')),
+                    child:
+                        Text(context.tr('Bayar Saat Ambil', 'Pay on Pickup')),
                   ),
                 ],
                 onChanged: (value) => paymentMethod = value ?? 'cash_on_pickup',
@@ -1067,7 +1184,8 @@ class _ServiceCard extends StatelessWidget {
                 controller: amountCtrl,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: context.tr('Nominal transaksi', 'Transaction amount'),
+                  labelText:
+                      context.tr('Nominal transaksi', 'Transaction amount'),
                   prefixText: 'Rp ',
                 ),
               ),
@@ -1102,7 +1220,8 @@ class _ServiceCard extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('${context.tr('Catatan', 'Notes')} ${_statusLabel(context, status)}'),
+        title: Text(
+            '${context.tr('Catatan', 'Notes')} ${_statusLabel(context, status)}'),
         content: TextField(
           controller: ctrl,
           maxLines: 3,
@@ -1125,4 +1244,3 @@ class _ServiceCard extends StatelessWidget {
     );
   }
 }
-

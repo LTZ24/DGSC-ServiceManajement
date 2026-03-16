@@ -55,12 +55,14 @@ class _HomeScreenState extends State<HomeScreen> {
             return;
           }
         }
+        if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/admin/dashboard',
           (route) => false,
         );
       } else {
+        if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/customer/dashboard',

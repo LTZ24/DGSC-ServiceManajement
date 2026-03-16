@@ -91,7 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.tr('Profil berhasil diperbarui', 'Profile updated successfully')),
+          content: Text(context.tr(
+              'Profil berhasil diperbarui', 'Profile updated successfully')),
           backgroundColor: AppTheme.successColor,
         ));
       }
@@ -120,17 +121,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       await BackendService.updateProfilePicture(uid, savedPath);
       await _loadProfile(showLoader: false);
-      if (mounted) {
-        await context.read<AuthProvider>().refreshProfile();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.tr('Foto profil berhasil diperbarui', 'Profile photo updated successfully')),
-          backgroundColor: AppTheme.successColor,
-        ));
-      }
+      if (!mounted) return;
+      await context.read<AuthProvider>().refreshProfile();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.tr('Foto profil berhasil diperbarui',
+            'Profile photo updated successfully')),
+        backgroundColor: AppTheme.successColor,
+      ));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${context.tr('Gagal memperbarui foto profil', 'Failed to update profile photo')}: $e'),
+          content: Text(
+              '${context.tr('Gagal memperbarui foto profil', 'Failed to update profile photo')}: $e'),
           backgroundColor: AppTheme.dangerColor,
         ));
       }
@@ -149,12 +152,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(context.tr('Link reset password akan dikirim langsung ke email akun Anda.', 'A password reset link will be sent directly to your account email.')),
+            Text(context.tr(
+                'Link reset password akan dikirim langsung ke email akun Anda.',
+                'A password reset link will be sent directly to your account email.')),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Batal', 'Cancel'))),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('Kirim Email', 'Send Email'))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.tr('Batal', 'Cancel'))),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(context.tr('Kirim Email', 'Send Email'))),
         ],
       ),
     );
@@ -168,14 +177,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await BackendService.savePasswordResetRole('customer');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.tr('Email reset password berhasil dikirim.', 'Password reset email sent successfully.')),
+          content: Text(context.tr('Email reset password berhasil dikirim.',
+              'Password reset email sent successfully.')),
           backgroundColor: AppTheme.successColor,
         ));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('${context.tr('Gagal mengirim', 'Failed to send')}: $e'),
+          content:
+              Text('${context.tr('Gagal mengirim', 'Failed to send')}: $e'),
           backgroundColor: AppTheme.dangerColor,
         ));
       }
@@ -231,8 +242,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: AppTheme.primaryColor,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color:
-                                            Theme.of(context).scaffoldBackgroundColor,
+                                        color: Theme.of(context)
+                                            .scaffoldBackgroundColor,
                                         width: 3,
                                       ),
                                     ),
@@ -258,10 +269,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 10),
                         if (!_isGooglePhoto)
                           Text(
-                            context.tr('Ketuk foto untuk memilih gambar dari galeri', 'Tap the photo to choose an image from the gallery'),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey,
-                                ),
+                            context.tr(
+                                'Ketuk foto untuk memilih gambar dari galeri',
+                                'Tap the photo to choose an image from the gallery'),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.grey,
+                                    ),
                             textAlign: TextAlign.center,
                           ),
                       ],
@@ -271,7 +285,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   TextFormField(
                     controller: _nameController,
                     decoration: InputDecoration(
-                        labelText: context.tr('Nama / Username', 'Name / Username'),
+                        labelText:
+                            context.tr('Nama / Username', 'Name / Username'),
                         prefixIcon: const Icon(Icons.person)),
                   ),
                   const SizedBox(height: 12),
@@ -279,16 +294,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
-                      labelText: context.tr('Nomor HP', 'Phone Number'),
-                      prefixIcon: const Icon(Icons.phone)),
+                        labelText: context.tr('Nomor HP', 'Phone Number'),
+                        prefixIcon: const Icon(Icons.phone)),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _emailController,
                     enabled: false,
                     decoration: InputDecoration(
-                      labelText: context.tr('Email (tidak bisa diubah)', 'Email (cannot be changed)'),
-                      prefixIcon: const Icon(Icons.email)),
+                        labelText: context.tr('Email (tidak bisa diubah)',
+                            'Email (cannot be changed)'),
+                        prefixIcon: const Icon(Icons.email)),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -301,7 +317,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               width: 20,
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white))
-                          : Text(context.tr('Simpan Perubahan', 'Save Changes')),
+                          : Text(
+                              context.tr('Simpan Perubahan', 'Save Changes')),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -311,9 +328,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Change Password Request
                   Card(
                     child: ListTile(
-                      leading: const Icon(Icons.lock_reset, color: AppTheme.infoColor),
-                      title: Text(context.tr('Ubah Password', 'Change Password')),
-                      subtitle: Text(context.tr('Kirim email reset password langsung ke akun Anda', 'Send a password reset email directly to your account')),
+                      leading: const Icon(Icons.lock_reset,
+                          color: AppTheme.infoColor),
+                      title:
+                          Text(context.tr('Ubah Password', 'Change Password')),
+                      subtitle: Text(context.tr(
+                          'Kirim email reset password langsung ke akun Anda',
+                          'Send a password reset email directly to your account')),
                       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: _sendResetPasswordEmail,
                     ),
@@ -323,13 +344,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Card(
                     color: AppTheme.dangerColor.withValues(alpha: 0.05),
                     child: ListTile(
-                      leading: const Icon(Icons.logout, color: AppTheme.dangerColor),
-                      title: const Text('Keluar', style: TextStyle(color: AppTheme.dangerColor)),
+                      leading:
+                          const Icon(Icons.logout, color: AppTheme.dangerColor),
+                      title: const Text('Keluar',
+                          style: TextStyle(color: AppTheme.dangerColor)),
                       onTap: () async {
                         final authProvider = context.read<AuthProvider>();
                         await authProvider.logout();
                         if (context.mounted) {
-                          Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+                          Navigator.pushNamedAndRemoveUntil(
+                              context, '/home', (r) => false);
                         }
                       },
                     ),

@@ -17,7 +17,8 @@ class AdminDiagnosisEditorScreen extends StatefulWidget {
       _AdminDiagnosisEditorScreenState();
 }
 
-class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen> {
+class _AdminDiagnosisEditorScreenState
+    extends State<AdminDiagnosisEditorScreen> {
   final TextEditingController _jsonController = TextEditingController();
   bool _isLoading = true;
   bool _isSubmitting = false;
@@ -65,7 +66,8 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
 
   Future<void> _validateOnly() async {
     try {
-      final summary = DiagnosisConfigService.summarizeJson(_jsonController.text);
+      final summary =
+          DiagnosisConfigService.summarizeJson(_jsonController.text);
       setState(() {
         _summary = summary;
         _validationMessage = 'JSON valid. Data siap disimpan atau dipublish.';
@@ -84,7 +86,8 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('$actionLabel ${this.context.tr('Data Diagnosis', 'Diagnosis Data')}'),
+          title: Text(
+              '$actionLabel ${context.tr('Data Diagnosis', 'Diagnosis Data')}'),
           content: Form(
             key: formKey,
             child: TextFormField(
@@ -92,12 +95,13 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
               obscureText: true,
               autofocus: true,
               decoration: InputDecoration(
-                labelText: this.context.tr('Password admin', 'Admin password'),
+                labelText: context.tr('Password admin', 'Admin password'),
                 prefixIcon: const Icon(Icons.lock_outline),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return this.context.tr('Password wajib diisi', 'Password is required');
+                  return context.tr(
+                      'Password wajib diisi', 'Password is required');
                 }
                 return null;
               },
@@ -106,7 +110,7 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(this.context.tr('Batal', 'Cancel')),
+              child: Text(context.tr('Batal', 'Cancel')),
             ),
             ElevatedButton(
               onPressed: () {
@@ -146,7 +150,7 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${this.context.tr('Gagal', 'Failed')}: $e'),
+          content: Text('${context.tr('Gagal', 'Failed')}: $e'),
           backgroundColor: AppTheme.dangerColor,
         ),
       );
@@ -166,13 +170,16 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
         if (!mounted) return;
         setState(() {
           _summary = summary;
-          _validationMessage = context.tr('Draft berhasil disimpan ke cloud dan lokal.', 'Draft saved to cloud and local storage successfully.');
+          _validationMessage = context.tr(
+              'Draft berhasil disimpan ke cloud dan lokal.',
+              'Draft saved to cloud and local storage successfully.');
         });
         await _loadEditor();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.tr('Draft diagnosis berhasil disimpan', 'Diagnosis draft saved successfully')),
+            content: Text(context.tr('Draft diagnosis berhasil disimpan',
+                'Diagnosis draft saved successfully')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -191,14 +198,17 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
         if (!mounted) return;
         setState(() {
           _summary = Map<String, int>.from(result['summary'] as Map);
-          _validationMessage =
-              context.tr('Publish berhasil. Versi ${result['version']} siap disinkronkan ke semua aplikasi.', 'Publish successful. Version ${result['version']} is ready to be synced to all applications.');
+          _validationMessage = context.tr(
+              'Publish berhasil. Versi ${result['version']} siap disinkronkan ke semua aplikasi.',
+              'Publish successful. Version ${result['version']} is ready to be synced to all applications.');
         });
         await _loadEditor();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.tr('Diagnosis versi ${result['version']} berhasil dipublish', 'Diagnosis version ${result['version']} published successfully')),
+            content: Text(context.tr(
+                'Diagnosis versi ${result['version']} berhasil dipublish',
+                'Diagnosis version ${result['version']} published successfully')),
             backgroundColor: AppTheme.successColor,
           ),
         );
@@ -234,14 +244,18 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
     setState(() {
       _jsonController.text = jsonText;
       _summary = summary;
-      _validationMessage = context.tr('Template default berhasil dimuat ke editor.', 'Default template loaded into the editor successfully.');
+      _validationMessage = context.tr(
+          'Template default berhasil dimuat ke editor.',
+          'Default template loaded into the editor successfully.');
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('Edit Data Diagnosis', 'Edit Diagnosis Data'))),
+      appBar: AppBar(
+          title:
+              Text(context.tr('Edit Data Diagnosis', 'Edit Diagnosis Data'))),
       drawer: const AppDrawer(isAdmin: true),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -294,7 +308,8 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
                               child: OutlinedButton.icon(
                                 onPressed: _isSubmitting ? null : _saveDraft,
                                 icon: const Icon(Icons.save_outlined),
-                                label: Text(context.tr('Simpan Draft', 'Save Draft')),
+                                label: Text(
+                                    context.tr('Simpan Draft', 'Save Draft')),
                               ),
                             ),
                           ],
@@ -314,7 +329,8 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
                                     ),
                                   )
                                 : const Icon(Icons.publish_outlined),
-                            label: Text(context.tr('Publish ke Semua User', 'Publish to All Users')),
+                            label: Text(context.tr('Publish ke Semua User',
+                                'Publish to All Users')),
                           ),
                         ),
                       ],
@@ -357,7 +373,9 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            context.tr('Perubahan draft disimpan ke Supabase dan perangkat admin. Saat publish, semua aplikasi akan mengunduh versi terbaru secara otomatis saat sinkronisasi berikutnya.', 'Draft changes are saved to Supabase and the admin device. When published, all apps will automatically download the latest version on the next sync.'),
+            context.tr(
+                'Perubahan draft disimpan ke Supabase dan perangkat admin. Saat publish, semua aplikasi akan mengunduh versi terbaru secara otomatis saat sinkronisasi berikutnya.',
+                'Draft changes are saved to Supabase and the admin device. When published, all apps will automatically download the latest version on the next sync.'),
             style: TextStyle(color: Colors.white70, height: 1.45),
           ),
           const SizedBox(height: 16),
@@ -365,9 +383,11 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
             spacing: 12,
             runSpacing: 12,
             children: [
-              _pill(context.tr('Versi publish', 'Published version'), publishedVersion),
+              _pill(context.tr('Versi publish', 'Published version'),
+                  publishedVersion),
               _pill(context.tr('Versi draft', 'Draft version'), draftVersion),
-              _pill(context.tr('Publish terakhir', 'Last published'), publishedAt),
+              _pill(context.tr('Publish terakhir', 'Last published'),
+                  publishedAt),
             ],
           ),
         ],
@@ -391,9 +411,12 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
               spacing: 12,
               runSpacing: 12,
               children: [
-                _summaryChip(context.tr('Kategori', 'Categories'), _summary['categories'] ?? 0),
-                _summaryChip(context.tr('Gejala', 'Symptoms'), _summary['symptoms'] ?? 0),
-                _summaryChip(context.tr('Kerusakan', 'Damages'), _summary['damages'] ?? 0),
+                _summaryChip(context.tr('Kategori', 'Categories'),
+                    _summary['categories'] ?? 0),
+                _summaryChip(context.tr('Gejala', 'Symptoms'),
+                    _summary['symptoms'] ?? 0),
+                _summaryChip(context.tr('Kerusakan', 'Damages'),
+                    _summary['damages'] ?? 0),
                 _summaryChip('Rule CF', _summary['rules'] ?? 0),
               ],
             ),
@@ -405,12 +428,14 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
                 OutlinedButton.icon(
                   onPressed: _isSubmitting ? null : _restorePublished,
                   icon: const Icon(Icons.restore_outlined),
-                  label: Text(context.tr('Ambil Data Publish', 'Load Published Data')),
+                  label: Text(
+                      context.tr('Ambil Data Publish', 'Load Published Data')),
                 ),
                 OutlinedButton.icon(
                   onPressed: _isSubmitting ? null : _useDefaultTemplate,
                   icon: const Icon(Icons.restart_alt_outlined),
-                  label: Text(context.tr('Template Default', 'Default Template')),
+                  label:
+                      Text(context.tr('Template Default', 'Default Template')),
                 ),
               ],
             ),
@@ -433,7 +458,9 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              context.tr('Format wajib memiliki kunci: categories, symptoms, damages, rules.', 'The format must include the keys: categories, symptoms, damages, rules.'),
+              context.tr(
+                  'Format wajib memiliki kunci: categories, symptoms, damages, rules.',
+                  'The format must include the keys: categories, symptoms, damages, rules.'),
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
             const SizedBox(height: 12),
@@ -455,7 +482,8 @@ class _AdminDiagnosisEditorScreenState extends State<AdminDiagnosisEditorScreen>
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  hintText: '{\n  "categories": [],\n  "symptoms": [],\n  "damages": [],\n  "rules": []\n}',
+                  hintText:
+                      '{\n  "categories": [],\n  "symptoms": [],\n  "damages": [],\n  "rules": []\n}',
                 ),
               ),
             ),

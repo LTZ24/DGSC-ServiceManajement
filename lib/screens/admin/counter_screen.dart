@@ -84,10 +84,12 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
       final localApps = await PpobCatalogService.loadDefaultApps();
       final localCategories = await PpobCatalogService.loadDefaultCategories();
       final localServices = _flattenLocalServices(localCategories);
-      final selectedApp = localApps.isEmpty ? null : _selectedApp ?? localApps.first;
+      final selectedApp =
+          localApps.isEmpty ? null : _selectedApp ?? localApps.first;
       final selectedCategory = localCategories.isEmpty
           ? null
-          : _resolveCategory(localCategories, _selectedCategory?['id_kategori']) ??
+          : _resolveCategory(
+                  localCategories, _selectedCategory?['id_kategori']) ??
               localCategories.first;
       final selectedService = selectedCategory == null
           ? null
@@ -480,6 +482,7 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
       if (!mounted) return;
       _resetForm();
       await _showReceiptPreview(receiptTransaction);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -566,11 +569,9 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
       MapEntry(context.tr('Total Harga', 'Total price'),
           _currencyFormat.format(selling)),
       if ((transaction['target_number'] ?? '').toString().isNotEmpty)
-        MapEntry(targetLabel,
-            transaction['target_number'].toString()),
+        MapEntry(targetLabel, transaction['target_number'].toString()),
       if ((transaction['customer_info'] ?? '').toString().isNotEmpty)
-        MapEntry(customerLabel,
-            transaction['customer_info'].toString()),
+        MapEntry(customerLabel, transaction['customer_info'].toString()),
       if ((transaction['token_customer_id'] ?? '').toString().isNotEmpty)
         MapEntry(context.tr('ID Token', 'Token ID'),
             transaction['token_customer_id'].toString()),
@@ -1125,7 +1126,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    context.tr('Input Transaksi PPOB', 'PPOB Transaction Entry'),
+                    context.tr(
+                        'Input Transaksi PPOB', 'PPOB Transaction Entry'),
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -1141,7 +1143,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                     DropdownButtonFormField<String>(
                       isExpanded: true,
                       menuMaxHeight: 360,
-                      initialValue: _selectedCategory?['id_kategori']?.toString(),
+                      initialValue:
+                          _selectedCategory?['id_kategori']?.toString(),
                       decoration: InputDecoration(
                         labelText: context.tr('Kategori', 'Category'),
                         isDense: true,
@@ -1169,7 +1172,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                           .toList(),
                       onChanged: (value) {
                         final category = _resolveCategory(_categories, value);
-                        final nextServices = _servicesForCategory(_services, value);
+                        final nextServices =
+                            _servicesForCategory(_services, value);
                         setState(() {
                           _selectedCategory = category;
                           _selectedService =
@@ -1188,7 +1192,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                       menuMaxHeight: 320,
                       initialValue: _currentTransactionType(),
                       decoration: InputDecoration(
-                        labelText: context.tr('Jenis transaksi', 'Transaction type'),
+                        labelText:
+                            context.tr('Jenis transaksi', 'Transaction type'),
                         isDense: true,
                       ),
                       items: const [
@@ -1235,7 +1240,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                           child: DropdownButtonFormField<String>(
                             isExpanded: true,
                             menuMaxHeight: 360,
-                            initialValue: _selectedCategory?['id_kategori']?.toString(),
+                            initialValue:
+                                _selectedCategory?['id_kategori']?.toString(),
                             decoration: InputDecoration(
                               labelText: context.tr('Kategori', 'Category'),
                               isDense: true,
@@ -1262,7 +1268,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                                 )
                                 .toList(),
                             onChanged: (value) {
-                              final category = _resolveCategory(_categories, value);
+                              final category =
+                                  _resolveCategory(_categories, value);
                               final nextServices =
                                   _servicesForCategory(_services, value);
                               setState(() {
@@ -1286,7 +1293,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                             menuMaxHeight: 320,
                             initialValue: _currentTransactionType(),
                             decoration: InputDecoration(
-                              labelText: context.tr('Jenis transaksi', 'Transaction type'),
+                              labelText: context.tr(
+                                  'Jenis transaksi', 'Transaction type'),
                               isDense: true,
                             ),
                             items: const [
@@ -1299,8 +1307,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                                 .map(
                                   (item) => DropdownMenuItem<String>(
                                     value: item,
-                                    child:
-                                        _dropdownText(_transactionTypeLabel(item)),
+                                    child: _dropdownText(
+                                        _transactionTypeLabel(item)),
                                   ),
                                 )
                                 .toList(),
@@ -1336,7 +1344,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                     menuMaxHeight: 360,
                     initialValue: _selectedService?['id_layanan']?.toString(),
                     decoration: InputDecoration(
-                      labelText: context.tr('Provider / transaksi', 'Provider / service'),
+                      labelText: context.tr(
+                          'Provider / transaksi', 'Provider / service'),
                       isDense: true,
                     ),
                     items: filteredServices
@@ -1396,9 +1405,10 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                       decoration: InputDecoration(
                         labelText: _targetInputLabel(),
                       ),
-                      validator: (value) => value == null || value.trim().isEmpty
-                          ? context.tr('Wajib diisi', 'Required')
-                          : null,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? context.tr('Wajib diisi', 'Required')
+                              : null,
                     ),
                   ] else ...[
                     Row(
@@ -1509,7 +1519,8 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
                           )
                         : const Icon(Icons.save_outlined),
                     label: Text(
-                      context.tr('Simpan & Cetak Struk', 'Save & Print Receipt'),
+                      context.tr(
+                          'Simpan & Cetak Struk', 'Save & Print Receipt'),
                     ),
                   ),
                 ],
@@ -1960,7 +1971,6 @@ class _AdminCounterScreenState extends State<AdminCounterScreen> {
       ),
     );
   }
-
 }
 
 class _MetricItem {

@@ -88,7 +88,8 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final greetingName =
-      _displayName.isEmpty ? context.tr('Pelanggan', 'Customer') : _displayName;
+        _displayName.isEmpty ? context.tr('Pelanggan', 'Customer') : _displayName;
+    final welcomePrefix = context.tr('Selamat Datang', 'Welcome');
     final surfaceColor = isDark ? AppTheme.darkSurface : AppTheme.lightSurface;
     final borderColor =
         isDark ? Colors.white.withValues(alpha: 0.08) : AppTheme.lightBorder;
@@ -195,8 +196,7 @@ class _CustomerDashboardScreenState extends State<CustomerDashboardScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        context.tr('Selamat Datang,\n', 'Welcome,\n') +
-                            '$greetingName!',
+                        '$welcomePrefix,\n$greetingName!',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,

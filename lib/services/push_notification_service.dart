@@ -17,8 +17,7 @@ class PushNotificationService {
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
-  static const AndroidNotificationChannel _channel =
-      AndroidNotificationChannel(
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'dgsc_general_notifications',
     'DGSC Notifications',
     description: 'Notifikasi booking, servis, dan pembayaran.',
@@ -67,6 +66,8 @@ class PushNotificationService {
     }
 
     if (prefs.getBool(storageKey) == true) return;
+
+    if (!context.mounted) return;
 
     final approved = await showDialog<bool>(
       context: context,
@@ -120,7 +121,9 @@ class PushNotificationService {
         previousUserId != userId) {
       await _messaging.unsubscribeFromTopic('user_$previousUserId');
     }
-    if (previousRole != null && previousRole.isNotEmpty && previousRole != role) {
+    if (previousRole != null &&
+        previousRole.isNotEmpty &&
+        previousRole != role) {
       await _messaging.unsubscribeFromTopic('role_$previousRole');
     }
 

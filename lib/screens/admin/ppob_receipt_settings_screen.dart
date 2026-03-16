@@ -50,7 +50,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
         ? (storeSettings['store_address'] ?? '').toString()
         : (receiptSettings['address'] ?? '').toString();
     _footerCtrl.text = (receiptSettings['footer_text'] ?? '').toString();
-    _headerImageBase64 = (receiptSettings['header_image_base64'] ?? '').toString();
+    _headerImageBase64 =
+        (receiptSettings['header_image_base64'] ?? '').toString();
     if (mounted) {
       setState(() {
         _printerSettings = printerSettings;
@@ -61,7 +62,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
 
   Future<void> _pickHeaderImage() async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final file =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (file == null) return;
     final bytes = await file.readAsBytes();
     if (!mounted) return;
@@ -90,7 +92,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
     final paperSizes = ['58', '80'];
     String selectedPaper = (_printerSettings['paper_size'] ?? '58').toString();
     String selectedName = (_printerSettings['printer_name'] ?? '').toString();
-    String selectedAddress = (_printerSettings['printer_address'] ?? '').toString();
+    String selectedAddress =
+        (_printerSettings['printer_address'] ?? '').toString();
     List<BluetoothPrinter> devices = const [];
     bool scanning = false;
 
@@ -140,8 +143,9 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                   SnackBar(
                     content: Text(
                       connected
-                          ? context.tr('Printer terhubung', 'Printer connected')
-                          : context.tr('Gagal menghubungkan printer', 'Failed to connect printer'),
+                          ? ctx.tr('Printer terhubung', 'Printer connected')
+                          : ctx.tr('Gagal menghubungkan printer',
+                              'Failed to connect printer'),
                     ),
                   ),
                 );
@@ -154,7 +158,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
             }
 
             return AlertDialog(
-              title: Text(context.tr('Koneksi Bluetooth', 'Bluetooth Connection')),
+              title:
+                  Text(context.tr('Koneksi Bluetooth', 'Bluetooth Connection')),
               content: SizedBox(
                 width: 420,
                 child: Column(
@@ -166,7 +171,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                           child: DropdownButtonFormField<String>(
                             initialValue: selectedPaper,
                             decoration: InputDecoration(
-                              labelText: context.tr('Ukuran Kertas', 'Paper Size'),
+                              labelText:
+                                  context.tr('Ukuran Kertas', 'Paper Size'),
                             ),
                             items: paperSizes
                                 .map((size) => DropdownMenuItem<String>(
@@ -210,7 +216,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                               shrinkWrap: true,
                               itemBuilder: (ctx2, index) {
                                 final device = devices[index];
-                                final selected = device.address == selectedAddress;
+                                final selected =
+                                    device.address == selectedAddress;
                                 return ListTile(
                                   dense: true,
                                   shape: RoundedRectangleBorder(
@@ -239,7 +246,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                                   },
                                 );
                               },
-                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
                               itemCount: devices.length,
                             ),
                     ),
@@ -284,7 +292,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.tr('Test print dikirim', 'Test print sent'))),
+        SnackBar(
+            content: Text(context.tr('Test print dikirim', 'Test print sent'))),
       );
     } catch (e) {
       if (!mounted) return;
@@ -344,7 +353,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                       if (previewBytes != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.memory(previewBytes, height: 120, fit: BoxFit.cover),
+                          child: Image.memory(previewBytes,
+                              height: 120, fit: BoxFit.cover),
                         ),
                       const SizedBox(height: 12),
                       Wrap(
@@ -354,11 +364,13 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                           OutlinedButton.icon(
                             onPressed: _pickHeaderImage,
                             icon: const Icon(Icons.image_outlined),
-                            label: Text(context.tr('Pilih Gambar', 'Pick Image')),
+                            label:
+                                Text(context.tr('Pilih Gambar', 'Pick Image')),
                           ),
                           if (_headerImageBase64.isNotEmpty)
                             TextButton.icon(
-                              onPressed: () => setState(() => _headerImageBase64 = ''),
+                              onPressed: () =>
+                                  setState(() => _headerImageBase64 = ''),
                               icon: const Icon(Icons.delete_outline),
                               label: Text(context.tr('Hapus', 'Remove')),
                             ),
@@ -368,11 +380,13 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                       TextFormField(
                         controller: _headerCtrl,
                         decoration: InputDecoration(
-                          labelText: context.tr('Header text info', 'Header text info'),
+                          labelText: context.tr(
+                              'Header text info', 'Header text info'),
                         ),
-                        validator: (value) => value == null || value.trim().isEmpty
-                            ? context.tr('Wajib diisi', 'Required')
-                            : null,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                                ? context.tr('Wajib diisi', 'Required')
+                                : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -381,16 +395,18 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                         decoration: InputDecoration(
                           labelText: context.tr('Alamat', 'Address'),
                         ),
-                        validator: (value) => value == null || value.trim().isEmpty
-                            ? context.tr('Wajib diisi', 'Required')
-                            : null,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                                ? context.tr('Wajib diisi', 'Required')
+                                : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _footerCtrl,
                         maxLines: 3,
                         decoration: InputDecoration(
-                          labelText: context.tr('Footer text info', 'Footer text info'),
+                          labelText: context.tr(
+                              'Footer text info', 'Footer text info'),
                         ),
                       ),
                     ],
@@ -415,16 +431,22 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                       _infoRow(
                         context,
                         context.tr('Device', 'Device'),
-                        (_printerSettings['printer_name'] ?? '').toString().isEmpty
+                        (_printerSettings['printer_name'] ?? '')
+                                .toString()
+                                .isEmpty
                             ? context.tr('Belum dipilih', 'Not selected yet')
-                            : (_printerSettings['printer_name'] ?? '').toString(),
+                            : (_printerSettings['printer_name'] ?? '')
+                                .toString(),
                       ),
                       _infoRow(
                         context,
                         context.tr('Address', 'Address'),
-                        (_printerSettings['printer_address'] ?? '').toString().isEmpty
+                        (_printerSettings['printer_address'] ?? '')
+                                .toString()
+                                .isEmpty
                             ? '-'
-                            : (_printerSettings['printer_address'] ?? '').toString(),
+                            : (_printerSettings['printer_address'] ?? '')
+                                .toString(),
                       ),
                       _infoRow(
                         context,
@@ -439,7 +461,8 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                           ElevatedButton.icon(
                             onPressed: _showPrinterDialog,
                             icon: const Icon(Icons.settings_bluetooth),
-                            label: Text(context.tr('Atur Printer', 'Configure Printer')),
+                            label: Text(context.tr(
+                                'Atur Printer', 'Configure Printer')),
                           ),
                           OutlinedButton.icon(
                             onPressed: _printTest,

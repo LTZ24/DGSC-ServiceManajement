@@ -136,7 +136,6 @@ class AppTheme {
       side: BorderSide(color: Colors.grey.shade300),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     ),
-    dialogBackgroundColor: lightSurface,
     dividerTheme: const DividerThemeData(
       color: lightBorder,
       thickness: 1,
@@ -332,7 +331,6 @@ class AppTheme {
       side: const BorderSide(color: Color(0xFF334155)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     ),
-    dialogBackgroundColor: darkSurface,
     dividerTheme: const DividerThemeData(
       color: darkBorder,
       thickness: 1,

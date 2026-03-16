@@ -51,7 +51,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text(context.tr('Nonaktifkan Sidik Jari', 'Disable Fingerprint')),
+          title:
+              Text(context.tr('Nonaktifkan Sidik Jari', 'Disable Fingerprint')),
           content: Text(context.tr(
             'Login dengan sidik jari akan dinonaktifkan. Anda tetap bisa login menggunakan password.',
             'Fingerprint login will be disabled. You can still log in with your password.',
@@ -75,8 +76,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         if (mounted) {
           setState(() => _biometricEnabled = false);
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.tr(
-                'Login sidik jari dinonaktifkan.', 'Fingerprint login disabled.')),
+            content: Text(context.tr('Login sidik jari dinonaktifkan.',
+                'Fingerprint login disabled.')),
           ));
         }
       }
@@ -116,7 +117,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   style: Theme.of(ctx).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
-                if (dialogError != null) ...[                  
+                if (dialogError != null) ...[
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
@@ -125,8 +126,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     ),
                     child: Text(
                       dialogError!,
-                      style:
-                          const TextStyle(color: AppTheme.dangerColor, fontSize: 12),
+                      style: const TextStyle(
+                          color: AppTheme.dangerColor, fontSize: 12),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -142,8 +143,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         icon: Icon(obscure
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined),
-                        onPressed: () =>
-                            setInner(() => obscure = !obscure),
+                        onPressed: () => setInner(() => obscure = !obscure),
                       ),
                     ),
                   ),
@@ -162,8 +162,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   : () async {
                       final password = passwordCtrl.text;
                       if (password.isEmpty) {
-                        setModalState(() => dialogError =
-                            context.tr('Password wajib diisi.', 'Password is required.'));
+                        setModalState(() => dialogError = context.tr(
+                            'Password wajib diisi.', 'Password is required.'));
                         return;
                       }
                       setModalState(() {
@@ -172,7 +172,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                       });
                       try {
                         final email = _profile?['email'] as String? ??
-                            BackendService.currentUser?.email ?? '';
+                            BackendService.currentUser?.email ??
+                            '';
                         await BackendService.signIn(email, password);
                         final uid = BackendService.currentUser?.uid ?? '';
                         await AdminBiometricService.enableForCurrentAdmin(
@@ -223,8 +224,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
   Future<void> _showAdminResetPasswordDialog() async {
     final emailCtrl = TextEditingController(
-      text:
-          _profile?['email'] as String? ?? BackendService.currentUser?.email ?? '',
+      text: _profile?['email'] as String? ??
+          BackendService.currentUser?.email ??
+          '',
     );
     final confirmed = await showDialog<bool>(
       context: context,
@@ -255,7 +257,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     emailCtrl.dispose();
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.tr('Masukkan email yang valid.', 'Enter a valid email.')),
+        content: Text(
+            context.tr('Masukkan email yang valid.', 'Enter a valid email.')),
         backgroundColor: AppTheme.dangerColor,
       ));
       return;
@@ -309,14 +312,17 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         userId: userId,
         role: 'admin',
       );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.tr('Notifikasi diaktifkan ✓', 'Notifications enabled ✓')),
+          content: Text(
+              context.tr('Notifikasi diaktifkan ✓', 'Notifications enabled ✓')),
           backgroundColor: AppTheme.successColor));
     } else if (status.isPermanentlyDenied) {
       openAppSettings();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('Izin notifikasi ditolak', 'Notification permission denied'))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(context.tr(
+              'Izin notifikasi ditolak', 'Notification permission denied'))));
     }
   }
 
@@ -348,7 +354,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        context.tr('Buat akun admin baru yang dapat login ke panel admin.', 'Create a new admin account that can sign in to the admin panel.'),
+                        context.tr(
+                            'Buat akun admin baru yang dapat login ke panel admin.',
+                            'Create a new admin account that can sign in to the admin panel.'),
                         style: Theme.of(ctx).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 16),
@@ -375,13 +383,15 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                       TextFormField(
                         controller: usernameCtrl,
                         decoration: InputDecoration(
-                          labelText: context.tr('Username Admin', 'Admin Username'),
+                          labelText:
+                              context.tr('Username Admin', 'Admin Username'),
                           prefixIcon: const Icon(Icons.person_outline),
                         ),
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                                ? context.tr('Username wajib diisi', 'Username is required')
-                                : null,
+                        validator: (value) => value == null ||
+                                value.trim().isEmpty
+                            ? context.tr(
+                                'Username wajib diisi', 'Username is required')
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -393,10 +403,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return context.tr('Email wajib diisi', 'Email is required');
+                            return context.tr(
+                                'Email wajib diisi', 'Email is required');
                           }
                           if (!value.contains('@')) {
-                            return context.tr('Format email tidak valid', 'Invalid email format');
+                            return context.tr('Format email tidak valid',
+                                'Invalid email format');
                           }
                           return null;
                         },
@@ -430,10 +442,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return context.tr('Password wajib diisi', 'Password is required');
+                            return context.tr(
+                                'Password wajib diisi', 'Password is required');
                           }
                           if (value.length < 6) {
-                            return context.tr('Password minimal 6 karakter', 'Password must be at least 6 characters');
+                            return context.tr('Password minimal 6 karakter',
+                                'Password must be at least 6 characters');
                           }
                           return null;
                         },
@@ -443,7 +457,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         controller: confirmCtrl,
                         obscureText: obscureConfirm,
                         decoration: InputDecoration(
-                          labelText: context.tr('Konfirmasi Password', 'Confirm Password'),
+                          labelText: context.tr(
+                              'Konfirmasi Password', 'Confirm Password'),
                           prefixIcon: const Icon(Icons.lock_reset_outlined),
                           suffixIcon: IconButton(
                             onPressed: () => setModalState(
@@ -458,10 +473,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return context.tr('Konfirmasi password wajib diisi', 'Password confirmation is required');
+                            return context.tr('Konfirmasi password wajib diisi',
+                                'Password confirmation is required');
                           }
                           if (value != passwordCtrl.text) {
-                            return context.tr('Konfirmasi password tidak cocok', 'Password confirmation does not match');
+                            return context.tr('Konfirmasi password tidak cocok',
+                                'Password confirmation does not match');
                           }
                           return null;
                         },
@@ -508,7 +525,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         } catch (_) {
                           setModalState(() {
                             isLoading = false;
-                            errorText = context.tr('Gagal membuat akun admin.', 'Failed to create admin account.');
+                            errorText = context.tr('Gagal membuat akun admin.',
+                                'Failed to create admin account.');
                           });
                         }
                       },
@@ -547,13 +565,14 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
     final username = _profile?['username'] as String? ??
         BackendService.currentUser?.email ??
-      context.tr('Admin', 'Admin');
+        context.tr('Admin', 'Admin');
     final email = _profile?['email'] as String? ??
         BackendService.currentUser?.email ??
         '';
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr('Pengaturan Admin', 'Admin Settings'))),
+      appBar:
+          AppBar(title: Text(context.tr('Pengaturan Admin', 'Admin Settings'))),
       drawer: const AppDrawer(isAdmin: true),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -588,7 +607,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             ),
           ),
           // Fingerprint activation tile (above Create Account)
-          if (_biometricSupported) ...[            
+          if (_biometricSupported) ...[
             const SizedBox(height: 12),
             _settingsCard(
               child: ListTile(
@@ -605,11 +624,10 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         : AppTheme.primaryColor,
                   ),
                 ),
-                title: Text(context.tr(
-                    'Login Sidik Jari', 'Fingerprint Login')),
+                title:
+                    Text(context.tr('Login Sidik Jari', 'Fingerprint Login')),
                 subtitle: Text(_biometricEnabled
-                    ? context.tr(
-                        'Aktif — ketuk untuk menonaktifkan',
+                    ? context.tr('Aktif — ketuk untuk menonaktifkan',
                         'Active — tap to disable')
                     : context.tr(
                         'Nonaktif — aktifkan untuk login tanpa password',
@@ -617,7 +635,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 trailing: Switch(
                   value: _biometricEnabled,
                   onChanged: (_) => _showToggleBiometricDialog(),
-                  activeColor: AppTheme.successColor,
+                  activeThumbColor: AppTheme.successColor,
                 ),
                 onTap: _showToggleBiometricDialog,
               ),
@@ -634,8 +652,10 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 child: Icon(Icons.admin_panel_settings_outlined,
                     color: AppTheme.primaryColor),
               ),
-              title: Text(context.tr('Buat Akun Admin', 'Create Admin Account')),
-              subtitle: Text(context.tr('Admin baru untuk panel pengelolaan.', 'New admin for the management panel.')),
+              title:
+                  Text(context.tr('Buat Akun Admin', 'Create Admin Account')),
+              subtitle: Text(context.tr('Admin baru untuk panel pengelolaan.',
+                  'New admin for the management panel.')),
               trailing: ElevatedButton.icon(
                 onPressed: _showCreateAdminDialog,
                 icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
@@ -653,7 +673,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 child: Icon(Icons.lock_reset_rounded,
                     color: AppTheme.warningColor),
               ),
-              title: Text(context.tr('Reset Password Admin', 'Reset Admin Password')),
+              title: Text(
+                  context.tr('Reset Password Admin', 'Reset Admin Password')),
               subtitle: Text(context.tr(
                   'Kirim email reset password ke akun admin.',
                   'Send a password reset email to the admin account.')),
@@ -709,15 +730,19 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           ),
 
           const SizedBox(height: 20),
-            _sectionHeader(context, context.tr('Data Diagnosis', 'Diagnosis Data')),
-            _settingsCard(
+          _sectionHeader(
+              context, context.tr('Data Diagnosis', 'Diagnosis Data')),
+          _settingsCard(
             child: ListTile(
               contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               leading: const Icon(Icons.dataset_linked_outlined,
                   color: AppTheme.primaryColor),
-              title: Text(context.tr('Edit Data Diagnosis', 'Edit Diagnosis Data')),
-              subtitle: Text(context.tr('Kelola JSON diagnosis, simpan draft, dan publish ke semua user', 'Manage diagnosis JSON, save drafts, and publish to all users')),
+              title: Text(
+                  context.tr('Edit Data Diagnosis', 'Edit Diagnosis Data')),
+              subtitle: Text(context.tr(
+                  'Kelola JSON diagnosis, simpan draft, dan publish ke semua user',
+                  'Manage diagnosis JSON, save drafts, and publish to all users')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () =>
                   Navigator.pushNamed(context, '/admin/diagnosis-editor'),
@@ -726,15 +751,16 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
           // ── Notifikasi ────────────────────────────────────────────
           const SizedBox(height: 20),
-            _sectionHeader(context, context.tr('Notifikasi', 'Notifications')),
-            _settingsCard(
+          _sectionHeader(context, context.tr('Notifikasi', 'Notifications')),
+          _settingsCard(
             child: ListTile(
               contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               leading: const Icon(Icons.notifications_outlined,
                   color: AppTheme.infoColor),
               title: Text(context.tr('Notifikasi Push', 'Push Notifications')),
-              subtitle: Text(context.tr('Izinkan notifikasi dari aplikasi ini', 'Allow notifications from this application')),
+              subtitle: Text(context.tr('Izinkan notifikasi dari aplikasi ini',
+                  'Allow notifications from this application')),
               trailing: _notificationStatus == null
                   ? const SizedBox(
                       width: 20,
@@ -747,8 +773,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                       : ElevatedButton(
                           onPressed: _requestNotificationPermission,
                           child: Text(_notificationStatus!.isPermanentlyDenied
-                            ? context.tr('Buka', 'Open')
-                            : context.tr('Aktifkan', 'Enable')),
+                              ? context.tr('Buka', 'Open')
+                              : context.tr('Aktifkan', 'Enable')),
                         ),
             ),
           ),
@@ -760,15 +786,16 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             child: Column(
               children: [
                 ListTile(
-                  leading:
-                      const Icon(Icons.phone_android, color: AppTheme.primaryColor),
+                  leading: const Icon(Icons.phone_android,
+                      color: AppTheme.primaryColor),
                   title: const Text('DigiTech Service Center'),
-                  subtitle: Text(context.tr('Sistem Manajemen Servis Digital', 'Digital Service Management System')),
+                  subtitle: Text(context.tr('Sistem Manajemen Servis Digital',
+                      'Digital Service Management System')),
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading:
-                      const Icon(Icons.info_outline, color: AppTheme.primaryColor),
+                  leading: const Icon(Icons.info_outline,
+                      color: AppTheme.primaryColor),
                   title: Text(context.tr('Versi Aplikasi', 'App Version')),
                   trailing: const Text('1.0.0',
                       style: TextStyle(fontWeight: FontWeight.bold)),
@@ -776,7 +803,8 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.code, color: AppTheme.primaryColor),
-                  title: Text(context.tr('GitHub Developer', 'GitHub Developer')),
+                  title:
+                      Text(context.tr('GitHub Developer', 'GitHub Developer')),
                   subtitle: const Text('github.com/LTZ24'),
                   trailing: const Icon(Icons.open_in_new,
                       size: 16, color: Colors.grey),
@@ -787,9 +815,11 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.storage, color: AppTheme.primaryColor),
-                  title: Text(context.tr('Server / Backend', 'Server / Backend')),
+                  title:
+                      Text(context.tr('Server / Backend', 'Server / Backend')),
                   subtitle: const Text('Supabase PostgreSQL (Cloud)'),
-                  trailing: const Icon(Icons.cloud_done, color: AppTheme.successColor),
+                  trailing: const Icon(Icons.cloud_done,
+                      color: AppTheme.successColor),
                 ),
                 const Divider(height: 1),
                 ListTile(
@@ -799,7 +829,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   trailing: TextButton(
                     onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content: Text(context.tr('Cache berhasil dibersihkan', 'Cache cleared successfully')))),
+                            content: Text(context.tr(
+                                'Cache berhasil dibersihkan',
+                                'Cache cleared successfully')))),
                     child: Text(context.tr('Bersihkan', 'Clear')),
                   ),
                 ),
@@ -815,13 +847,17 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               leading: const Icon(Icons.logout, color: AppTheme.dangerColor),
               title: Text(context.tr('Keluar', 'Logout'),
                   style: TextStyle(color: AppTheme.dangerColor)),
-              subtitle: Text(context.tr('Keluar dari akun admin', 'Sign out from the admin account')),
+              subtitle: Text(context.tr(
+                  'Keluar dari akun admin', 'Sign out from the admin account')),
               onTap: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: Text(context.tr('Konfirmasi Keluar', 'Confirm Logout')),
-                    content: Text(context.tr('Yakin ingin keluar dari akun admin?', 'Are you sure you want to sign out from the admin account?')),
+                    title:
+                        Text(context.tr('Konfirmasi Keluar', 'Confirm Logout')),
+                    content: Text(context.tr(
+                        'Yakin ingin keluar dari akun admin?',
+                        'Are you sure you want to sign out from the admin account?')),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
