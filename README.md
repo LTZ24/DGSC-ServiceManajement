@@ -102,7 +102,7 @@ Output: app-armeabi-v7a-release.apk | app-arm64-v8a-release.apk | app-x86_64-rel
 - Backend utama berjalan di Supabase
 - Firebase dipakai untuk dukungan messaging
 - Master data PPOB dibackup lokal dari sinkron asset/cloud
-- Aplikasi mendukung target Android, iOS, Web, Windows, Linux, dan macOS
+- Aplikasi difokuskan untuk platform Android
 
 ## Setup Backend Lengkap
 
