@@ -19,13 +19,13 @@ Aplikasi dengan build Flutter untuk DigiTech Service Center dengan alur servis p
 - Pemisahan role `admin` dan `customer`
 - Alur reset password melalui deep link
 
-### 2. Fitur Customer
+### 2. Customer
 - Booking servis perangkat
 - Melihat progres servis dan riwayat
 - Menjalankan diagnosis kerusakan perangkat
 - Mengelola profil dan pengaturan aplikasi
 
-### 3. Fitur Admin
+### 3. Admin
 - Dashboard untuk ringkasan operasional dan keuangan
 - Verifikasi booking dan konversi ke servis aktif
 - Manajemen alur servis sampai pengambilan/pembayaran
@@ -33,15 +33,15 @@ Aplikasi dengan build Flutter untuk DigiTech Service Center dengan alur servis p
 - Manajemen spare part dan keuangan
 - Pengaturan toko dan pengaturan admin
 
-### 4. PPOB & Konter
+### 4. PPOB 
 - Manajemen aplikasi/provider PPOB
 - Manajemen kategori transaksi dan layanan
 - Pelacakan saldo harian dan ringkasan laporan
 - Preview struk, bagikan, simpan, dan cetak Bluetooth
 - Backup JSON lokal untuk master data PPOB
 
-### 5. Mesin Diagnosis
-- Mesin Certainty Factor tertanam di aplikasi
+### 5. Tools Diagnosis
+- Tools Diagnosis menggunakan logic Certainty Factor.
 - Editor admin untuk dataset JSON diagnosis
 - Draft, validasi, publish, dan sinkron cache lokal
 
@@ -60,10 +60,10 @@ Aplikasi dengan build Flutter untuk DigiTech Service Center dengan alur servis p
 - Supabase Auth, Database, Storage, Functions
 - Firebase Core + Firebase Messaging
 
-**Integrasi Lain**
+**Others**
 - Google Sign-In, Bluetooth thermal printing, Share/export struk
 
-## Struktur Proyek
+## Struktur
 
 - lib/main.dart — bootstrap aplikasi, providers, routes
 - lib/services/backend_service.dart — abstraksi backend utama
@@ -97,7 +97,7 @@ flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=https://Y
 
 Output: app-armeabi-v7a-release.apk | app-arm64-v8a-release.apk | app-x86_64-release.apk
 
-## Catatan Penting
+## Notes
 
 - Backend utama berjalan di Supabase
 - Firebase dipakai untuk dukungan messaging
