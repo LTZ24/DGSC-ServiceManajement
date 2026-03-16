@@ -68,7 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!success || !mounted) return;
 
     TextInput.finishAutofillContext(shouldSave: true);
-    await _refreshAdminBiometricState();
 
     await PushNotificationService.requestFirstLoginPermissions(
       context,

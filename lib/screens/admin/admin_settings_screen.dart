@@ -6,6 +6,7 @@ import '../../l10n/app_text.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/admin_biometric_service.dart';
 import '../../services/backend_types.dart';
 import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
@@ -22,12 +23,261 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
   PermissionStatus? _notificationStatus;
+  bool _biometricEnabled = false;
+  bool _biometricSupported = false;
 
   @override
   void initState() {
     super.initState();
     _loadProfile();
     _loadNotificationStatus();
+    _loadBiometricState();
+  }
+
+  Future<void> _loadBiometricState() async {
+    final supported = await AdminBiometricService.isSupportedOnDevice();
+    final enabled = await AdminBiometricService.isEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricSupported = supported;
+        _biometricEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _showToggleBiometricDialog() async {
+    if (_biometricEnabled) {
+      // Disable fingerprint login
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(context.tr('Nonaktifkan Sidik Jari', 'Disable Fingerprint')),
+          content: Text(context.tr(
+            'Login dengan sidik jari akan dinonaktifkan. Anda tetap bisa login menggunakan password.',
+            'Fingerprint login will be disabled. You can still log in with your password.',
+          )),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.tr('Batal', 'Cancel')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.dangerColor),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(context.tr('Nonaktifkan', 'Disable')),
+            ),
+          ],
+        ),
+      );
+      if (confirm == true) {
+        await AdminBiometricService.disable();
+        if (mounted) {
+          setState(() => _biometricEnabled = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(context.tr(
+                'Login sidik jari dinonaktifkan.', 'Fingerprint login disabled.')),
+          ));
+        }
+      }
+      return;
+    }
+
+    // Enable fingerprint — confirm with password
+    final passwordCtrl = TextEditingController();
+    var obscure = true;
+    var isChecking = false;
+    String? dialogError;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.fingerprint_rounded,
+                  color: AppTheme.primaryColor),
+              const SizedBox(width: 10),
+              Text(context.tr('Aktifkan Sidik Jari', 'Enable Fingerprint')),
+            ],
+          ),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  context.tr(
+                    'Konfirmasi dengan password akun admin untuk mengaktifkan login sidik jari.',
+                    'Confirm with your admin account password to enable fingerprint login.',
+                  ),
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                if (dialogError != null) ...[                  
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.dangerColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      dialogError!,
+                      style:
+                          const TextStyle(color: AppTheme.dangerColor, fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                StatefulBuilder(
+                  builder: (_, setInner) => TextField(
+                    controller: passwordCtrl,
+                    obscureText: obscure,
+                    decoration: InputDecoration(
+                      labelText: context.tr('Password Admin', 'Admin Password'),
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscure
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined),
+                        onPressed: () =>
+                            setInner(() => obscure = !obscure),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isChecking ? null : () => Navigator.pop(ctx),
+              child: Text(context.tr('Batal', 'Cancel')),
+            ),
+            ElevatedButton(
+              onPressed: isChecking
+                  ? null
+                  : () async {
+                      final password = passwordCtrl.text;
+                      if (password.isEmpty) {
+                        setModalState(() => dialogError =
+                            context.tr('Password wajib diisi.', 'Password is required.'));
+                        return;
+                      }
+                      setModalState(() {
+                        isChecking = true;
+                        dialogError = null;
+                      });
+                      try {
+                        final email = _profile?['email'] as String? ??
+                            BackendService.currentUser?.email ?? '';
+                        await BackendService.signIn(email, password);
+                        final uid = BackendService.currentUser?.uid ?? '';
+                        await AdminBiometricService.enableForCurrentAdmin(
+                            uid: uid);
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        if (mounted) {
+                          setState(() => _biometricEnabled = true);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(context.tr(
+                              'Login sidik jari berhasil diaktifkan!',
+                              'Fingerprint login enabled!',
+                            )),
+                            backgroundColor: AppTheme.successColor,
+                          ));
+                        }
+                      } on BackendException catch (e) {
+                        setModalState(() {
+                          isChecking = false;
+                          dialogError = e.message.isNotEmpty
+                              ? e.message
+                              : context.tr(
+                                  'Password salah.', 'Wrong password.');
+                        });
+                      } catch (_) {
+                        setModalState(() {
+                          isChecking = false;
+                          dialogError = context.tr(
+                              'Konfirmasi gagal. Periksa password.',
+                              'Confirmation failed. Check your password.');
+                        });
+                      }
+                    },
+              child: isChecking
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : Text(context.tr('Aktifkan', 'Enable')),
+            ),
+          ],
+        ),
+      ),
+    );
+    passwordCtrl.dispose();
+  }
+
+  Future<void> _showAdminResetPasswordDialog() async {
+    final emailCtrl = TextEditingController(
+      text:
+          _profile?['email'] as String? ?? BackendService.currentUser?.email ?? '',
+    );
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.tr('Reset Password Admin', 'Reset Admin Password')),
+        content: TextField(
+          controller: emailCtrl,
+          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(
+            labelText: context.tr('Email akun admin', 'Admin account email'),
+            prefixIcon: const Icon(Icons.email_outlined),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.tr('Batal', 'Cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(context.tr('Kirim Email', 'Send Email')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final email = emailCtrl.text.trim();
+    emailCtrl.dispose();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.tr('Masukkan email yang valid.', 'Enter a valid email.')),
+        backgroundColor: AppTheme.dangerColor,
+      ));
+      return;
+    }
+    try {
+      await BackendService.sendPasswordResetEmail(email);
+      await BackendService.savePasswordResetRole('admin');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.tr(
+            'Email reset password telah dikirim ke $email.',
+            'Password reset email has been sent to $email.')),
+        backgroundColor: AppTheme.successColor,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(context.tr(
+            'Gagal mengirim email reset.', 'Failed to send reset email.')),
+        backgroundColor: AppTheme.dangerColor,
+      ));
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -337,6 +587,43 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               ),
             ),
           ),
+          // Fingerprint activation tile (above Create Account)
+          if (_biometricSupported) ...[            
+            const SizedBox(height: 12),
+            _settingsCard(
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                leading: CircleAvatar(
+                  backgroundColor: _biometricEnabled
+                      ? AppTheme.successColor.withValues(alpha: 0.12)
+                      : AppTheme.primaryColor.withValues(alpha: 0.08),
+                  child: Icon(
+                    Icons.fingerprint_rounded,
+                    color: _biometricEnabled
+                        ? AppTheme.successColor
+                        : AppTheme.primaryColor,
+                  ),
+                ),
+                title: Text(context.tr(
+                    'Login Sidik Jari', 'Fingerprint Login')),
+                subtitle: Text(_biometricEnabled
+                    ? context.tr(
+                        'Aktif — ketuk untuk menonaktifkan',
+                        'Active — tap to disable')
+                    : context.tr(
+                        'Nonaktif — aktifkan untuk login tanpa password',
+                        'Inactive — enable for passwordless login')),
+                trailing: Switch(
+                  value: _biometricEnabled,
+                  onChanged: (_) => _showToggleBiometricDialog(),
+                  activeColor: AppTheme.successColor,
+                ),
+                onTap: _showToggleBiometricDialog,
+              ),
+            ),
+          ],
+
           const SizedBox(height: 12),
           _settingsCard(
             child: ListTile(
@@ -347,13 +634,31 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 child: Icon(Icons.admin_panel_settings_outlined,
                     color: AppTheme.primaryColor),
               ),
-              title: Text(context.tr('Buat Akun', 'Create Account')),
+              title: Text(context.tr('Buat Akun Admin', 'Create Admin Account')),
               subtitle: Text(context.tr('Admin baru untuk panel pengelolaan.', 'New admin for the management panel.')),
               trailing: ElevatedButton.icon(
                 onPressed: _showCreateAdminDialog,
                 icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
                 label: Text(context.tr('+', '+')),
               ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _settingsCard(
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x14F59E0B),
+                child: Icon(Icons.lock_reset_rounded,
+                    color: AppTheme.warningColor),
+              ),
+              title: Text(context.tr('Reset Password Admin', 'Reset Admin Password')),
+              subtitle: Text(context.tr(
+                  'Kirim email reset password ke akun admin.',
+                  'Send a password reset email to the admin account.')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _showAdminResetPasswordDialog,
             ),
           ),
 

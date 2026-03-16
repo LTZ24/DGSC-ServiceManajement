@@ -73,10 +73,6 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      if (_profile?['role'] == 'admin') {
-        await AdminBiometricService.enableForCurrentAdmin(uid: uid);
-      }
-
       _isLoading = false;
       notifyListeners();
       return _profile != null;
@@ -259,11 +255,11 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Logout from Supabase Auth
+  /// Logout from Supabase Auth — clear state instantly, sign out in background
   Future<void> logout() async {
-    await BackendService.signOut();
     _profile = null;
     notifyListeners();
+    BackendService.signOut().ignore();
   }
 
   void clearError() {
