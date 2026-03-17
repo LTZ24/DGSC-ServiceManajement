@@ -9,6 +9,7 @@ import '../../providers/theme_provider.dart';
 import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
 import '../../widgets/app_drawer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CustomerSettingsScreen extends StatefulWidget {
   const CustomerSettingsScreen({super.key});
@@ -19,6 +20,7 @@ class CustomerSettingsScreen extends StatefulWidget {
 
 class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
   PermissionStatus? _notificationStatus;
+  static const String _developerUrl = 'https://github.com/LTZ24';
 
   @override
   void initState() {
@@ -60,6 +62,19 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(context.tr(
               'Izin notifikasi ditolak', 'Notification permission denied'))));
+    }
+  }
+
+  Future<void> _openDeveloperLink() async {
+    final uri = Uri.parse(_developerUrl);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('Tidak bisa membuka link developer.', 'Could not open developer link.')),
+          backgroundColor: AppTheme.dangerColor,
+        ),
+      );
     }
   }
 
@@ -169,27 +184,21 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                           'Digital device service management application'),
                       style: TextStyle(fontSize: 12)),
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.info_outline,
                       color: AppTheme.primaryColor),
                   title: Text(context.tr('Versi Aplikasi', 'App Version')),
-                  trailing: const Text('1.0.0',
+                  trailing: const Text('1.0.2',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.code, color: AppTheme.primaryColor),
-                  title:
-                      Text(context.tr('GitHub Developer', 'GitHub Developer')),
+                  title: Text(context.tr('Developer', 'Developer')),
                   subtitle: const Text('github.com/LTZ24'),
                   trailing: const Icon(Icons.open_in_new,
                       size: 16, color: Colors.grey),
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('https://github.com/LTZ24'))),
+                  onTap: _openDeveloperLink,
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.storage, color: AppTheme.primaryColor),
                   title:
@@ -200,6 +209,22 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                       color: AppTheme.successColor),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _settingsCard(
+            child: ListTile(
+              leading: const Icon(Icons.cleaning_services, color: Colors.grey),
+              title: Text(context.tr('Bersihkan Cache', 'Clear Cache')),
+              trailing: TextButton(
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(context.tr(
+                            'Cache berhasil dibersihkan',
+                            'Cache cleared successfully')))),
+                child: Text(context.tr('Bersihkan', 'Clear')),
+              ),
             ),
           ),
 

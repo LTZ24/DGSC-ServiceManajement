@@ -12,6 +12,7 @@ import '../../services/backend_types.dart';
 import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
 import '../../widgets/app_drawer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminSettingsScreen extends StatefulWidget {
   const AdminSettingsScreen({super.key});
@@ -26,6 +27,21 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   PermissionStatus? _notificationStatus;
   bool _biometricEnabled = false;
   bool _biometricSupported = false;
+
+  static const String _developerUrl = 'https://github.com/LTZ24';
+
+  Future<void> _openDeveloperLink() async {
+    final uri = Uri.parse(_developerUrl);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('Tidak bisa membuka link developer.', 'Could not open developer link.')),
+          backgroundColor: AppTheme.dangerColor,
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -810,27 +826,21 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   subtitle: Text(context.tr('Sistem Manajemen Servis Digital',
                       'Digital Service Management System')),
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.info_outline,
                       color: AppTheme.primaryColor),
                   title: Text(context.tr('Versi Aplikasi', 'App Version')),
-                  trailing: const Text('1.0.0',
+                  trailing: const Text('1.0.2',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.code, color: AppTheme.primaryColor),
-                  title:
-                      Text(context.tr('GitHub Developer', 'GitHub Developer')),
+                  title: Text(context.tr('Developer', 'Developer')),
                   subtitle: const Text('github.com/LTZ24'),
                   trailing: const Icon(Icons.open_in_new,
                       size: 16, color: Colors.grey),
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('https://github.com/LTZ24'))),
+                  onTap: _openDeveloperLink,
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.storage, color: AppTheme.primaryColor),
                   title:
@@ -840,21 +850,23 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   trailing: const Icon(Icons.cloud_done,
                       color: AppTheme.successColor),
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading:
-                      const Icon(Icons.cleaning_services, color: Colors.grey),
-                  title: Text(context.tr('Bersihkan Cache', 'Clear Cache')),
-                  trailing: TextButton(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(context.tr(
-                                'Cache berhasil dibersihkan',
-                                'Cache cleared successfully')))),
-                    child: Text(context.tr('Bersihkan', 'Clear')),
-                  ),
-                ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _settingsCard(
+            child: ListTile(
+              leading: const Icon(Icons.cleaning_services, color: Colors.grey),
+              title: Text(context.tr('Bersihkan Cache', 'Clear Cache')),
+              trailing: TextButton(
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text(context.tr(
+                            'Cache berhasil dibersihkan',
+                            'Cache cleared successfully')))),
+                child: Text(context.tr('Bersihkan', 'Clear')),
+              ),
             ),
           ),
 
@@ -863,10 +875,10 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           _settingsCard(
             child: ListTile(
               leading: const Icon(Icons.receipt_long, color: AppTheme.primaryColor),
-              title: Text(context.tr('Log / Log History', 'Log / Log History')),
+              title: Text(context.tr('Log', 'Log')),
               subtitle: Text(context.tr(
-                  'Lihat log aplikasi (start & error) dan unduh untuk laporan.',
-                  'View app logs (startup & errors) and download for reports.')),
+                  'view apps logs',
+                  'view apps logs')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.pushNamed(context, '/admin/logs'),
             ),

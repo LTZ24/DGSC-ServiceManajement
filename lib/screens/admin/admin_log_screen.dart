@@ -117,7 +117,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.tr('Log / Log History', 'Log / Log History')),
+        title: Text(context.tr('Log', 'Log')),
         actions: [
           IconButton(
             onPressed: _loading ? null : _load,
@@ -161,7 +161,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              context.tr('Belum ada log.', 'No logs yet.'),
+                              context.tr('Belum ada log aplikasi.', 'No app logs yet.'),
                               style: Theme.of(context)
                                   .textTheme
                                   .titleSmall

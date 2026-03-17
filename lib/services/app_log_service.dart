@@ -107,17 +107,65 @@ class AppLogService {
     if (!_initialized) {
       await initialize();
     }
+    final candidates = await _candidateFiles();
+    for (final file in candidates) {
+      try {
+        if (await file.exists()) {
+          final text = await file.readAsString();
+          if (text.trim().isNotEmpty) {
+            return file;
+          }
+        }
+      } catch (_) {}
+    }
     return _logFile;
   }
 
   static Future<String> readAll() async {
-    final file = await getLogFile();
-    if (file == null) return '';
-    try {
-      if (!await file.exists()) return '';
-      return await file.readAsString();
-    } catch (_) {
+    final files = await _candidateFiles();
+    final chunks = <String>[];
+
+    for (final file in files) {
+      try {
+        if (!await file.exists()) continue;
+        final text = await file.readAsString();
+        if (text.trim().isNotEmpty) {
+          chunks.add(text.trim());
+        }
+      } catch (_) {}
+    }
+
+    if (chunks.isEmpty) {
       return '';
     }
+
+    final merged = chunks.join('\n');
+    return merged;
+  }
+
+  static Future<List<File>> _candidateFiles() async {
+    final files = <File>[];
+
+    if (_logFile != null) {
+      files.add(_logFile!);
+    }
+
+    if (!kIsWeb && Platform.isAndroid) {
+      files.add(File(p.join(_androidMediaLogDir, _logFileName)));
+    }
+
+    try {
+      final docs = await getApplicationDocumentsDirectory();
+      files.add(File(p.join(docs.path, 'log', _logFileName)));
+    } catch (_) {}
+
+    final unique = <String>{};
+    final result = <File>[];
+    for (final file in files) {
+      if (unique.add(file.path)) {
+        result.add(file);
+      }
+    }
+    return result;
   }
 }

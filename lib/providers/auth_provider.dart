@@ -210,9 +210,8 @@ class AuthProvider extends ChangeNotifier {
 
       final restored = await AdminBiometricService.restoreAdminSession();
       if (!restored) {
-        await AdminBiometricService.disable();
         _error =
-            'Sesi login sidik jari sudah tidak valid. Silakan login ulang dengan password.';
+            'Sesi sidik jari belum bisa dipulihkan. Coba lagi, atau login dengan password.';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -220,7 +219,7 @@ class AuthProvider extends ChangeNotifier {
 
       final current = BackendService.currentUser;
       if (current == null) {
-        _error = 'Sesi login sidik jari tidak valid.';
+        _error = 'Sesi login sidik jari belum tersedia. Silakan coba lagi.';
         _isLoading = false;
         notifyListeners();
         return false;
