@@ -240,7 +240,8 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                 await authProvider.logout();
                 if (context.mounted) {
                   Navigator.pushNamedAndRemoveUntil(
-                      context, '/home', (r) => false);
+                      context, '/login', (r) => false,
+                      arguments: {'role': 'customer'});
                 }
               },
             ),

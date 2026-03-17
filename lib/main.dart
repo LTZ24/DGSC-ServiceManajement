@@ -16,6 +16,7 @@ import 'services/backend_service.dart';
 import 'services/diagnosis_config_service.dart';
 import 'services/push_notification_service.dart';
 import 'widgets/global_refresh_wrapper.dart';
+import 'auth_wrapper.dart';
 
 // Auth screens
 import 'screens/splash_screen.dart';
@@ -169,8 +170,9 @@ class _DGSCAppState extends State<DGSCApp> {
             builder: (context, child) => GlobalRefreshWrapper(
               child: child ?? const SizedBox.shrink(),
             ),
-            initialRoute: '/home',
+            initialRoute: '/auth-wrapper',
             routes: {
+              '/auth-wrapper': (context) => const AuthWrapper(),
               // Pre-login homepage (now initial)
               '/home': (context) => const HomeScreen(),
               // Splash (optional, kept for reference)

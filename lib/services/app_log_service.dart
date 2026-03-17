@@ -12,6 +12,7 @@ class AppLogService {
 
   static bool _initialized = false;
   static File? _logFile;
+  static File? _mirrorLogFile;
   static Future<void> _writeQueue = Future<void>.value();
 
   static Future<void> initialize() async {
@@ -20,36 +21,32 @@ class AppLogService {
 
     final file = await _resolveLogFile();
     _logFile = file;
+    _mirrorLogFile = await _resolveAndroidMirrorLogFile();
 
     await log('=== App start ===');
   }
 
   static Future<File> _resolveLogFile() async {
-    Directory dir;
-
-    if (!kIsWeb && Platform.isAndroid) {
-      dir = Directory(_androidMediaLogDir);
-      try {
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-      } catch (_) {
-        // Fallback to app documents if media dir is not writable.
-        final docs = await getApplicationDocumentsDirectory();
-        dir = Directory(p.join(docs.path, 'log'));
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-      }
-    } else {
-      final docs = await getApplicationDocumentsDirectory();
-      dir = Directory(p.join(docs.path, 'log'));
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory(p.join(docs.path, 'log'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
     }
 
     return File(p.join(dir.path, _logFileName));
+  }
+
+  static Future<File?> _resolveAndroidMirrorLogFile() async {
+    if (kIsWeb || !Platform.isAndroid) return null;
+    try {
+      final dir = Directory(_androidMediaLogDir);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      return File(p.join(dir.path, _logFileName));
+    } catch (_) {
+      return null;
+    }
   }
 
   static String _ts() => DateTime.now().toIso8601String();
@@ -91,12 +88,19 @@ class AppLogService {
     }
 
     final file = _logFile ?? await _resolveLogFile();
+    final mirror = _mirrorLogFile ?? await _resolveAndroidMirrorLogFile();
 
     _writeQueue = _writeQueue.then((_) async {
       try {
         await file.writeAsString('$text\n', mode: FileMode.append, flush: true);
       } catch (_) {
         // Ignore logging failures to avoid cascading crashes.
+      }
+
+      if (mirror != null) {
+        try {
+          await mirror.writeAsString('$text\n', mode: FileMode.append, flush: true);
+        } catch (_) {}
       }
     });
 
@@ -107,14 +111,11 @@ class AppLogService {
     if (!_initialized) {
       await initialize();
     }
-    final candidates = await _candidateFiles();
-    for (final file in candidates) {
+    final mirror = _mirrorLogFile;
+    if (mirror != null) {
       try {
-        if (await file.exists()) {
-          final text = await file.readAsString();
-          if (text.trim().isNotEmpty) {
-            return file;
-          }
+        if (await mirror.exists()) {
+          return mirror;
         }
       } catch (_) {}
     }
@@ -122,50 +123,12 @@ class AppLogService {
   }
 
   static Future<String> readAll() async {
-    final files = await _candidateFiles();
-    final chunks = <String>[];
-
-    for (final file in files) {
-      try {
-        if (!await file.exists()) continue;
-        final text = await file.readAsString();
-        if (text.trim().isNotEmpty) {
-          chunks.add(text.trim());
-        }
-      } catch (_) {}
-    }
-
-    if (chunks.isEmpty) {
+    final source = _logFile ?? await _resolveLogFile();
+    try {
+      if (!await source.exists()) return '';
+      return await source.readAsString();
+    } catch (_) {
       return '';
     }
-
-    final merged = chunks.join('\n');
-    return merged;
-  }
-
-  static Future<List<File>> _candidateFiles() async {
-    final files = <File>[];
-
-    if (_logFile != null) {
-      files.add(_logFile!);
-    }
-
-    if (!kIsWeb && Platform.isAndroid) {
-      files.add(File(p.join(_androidMediaLogDir, _logFileName)));
-    }
-
-    try {
-      final docs = await getApplicationDocumentsDirectory();
-      files.add(File(p.join(docs.path, 'log', _logFileName)));
-    } catch (_) {}
-
-    final unique = <String>{};
-    final result = <File>[];
-    for (final file in files) {
-      if (unique.add(file.path)) {
-        result.add(file);
-      }
-    }
-    return result;
   }
 }

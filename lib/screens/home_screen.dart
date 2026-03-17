@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../services/admin_biometric_service.dart';
-import '../services/backend_service.dart';
 import '../config/theme.dart';
 import '../l10n/app_text.dart';
 import '../providers/auth_provider.dart';
@@ -38,37 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     if (isLoggedIn) {
-      if (authProvider.isAdmin) {
-        final shouldProtect =
-            await AdminBiometricService.canUseBiometricLogin();
-        if (shouldProtect) {
-          final authenticated = await AdminBiometricService.authenticate();
-          if (!authenticated) {
-            await BackendService.signOut();
-            if (!mounted) return;
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/login',
-              (route) => false,
-              arguments: {'role': 'admin'},
-            );
-            return;
-          }
-        }
-        if (!mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/admin/dashboard',
-          (route) => false,
-        );
-      } else {
-        if (!mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/customer/dashboard',
-          (route) => false,
-        );
-      }
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/auth-wrapper',
+        (route) => false,
+      );
     } else {
       setState(() => _checkedAuth = true);
     }
