@@ -30,12 +30,15 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   static const String _developerUrl = 'https://github.com/LTZ24';
 
   Future<void> _openDeveloperLink() async {
+    final errorText =
+        context.tr('Tidak bisa membuka link developer.', 'Could not open developer link.');
     final uri = Uri.parse(_developerUrl);
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && mounted) {
+    if (!mounted) return;
+    if (!opened) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('Tidak bisa membuka link developer.', 'Could not open developer link.')),
+          content: Text(errorText),
           backgroundColor: AppTheme.dangerColor,
         ),
       );
@@ -63,6 +66,28 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   Future<void> _toggleBiometric(bool enable) async {
     final auth = context.read<AuthProvider>();
     final messenger = ScaffoldMessenger.of(context);
+    final reasonText = context.tr(
+      'Verifikasi sidik jari Anda untuk mengaktifkan keamanan aplikasi.',
+      'Verify your fingerprint to enable app security.',
+    );
+    final activationCancelledText = context.tr(
+      'Aktivasi sidik jari dibatalkan.',
+      'Fingerprint activation canceled.',
+    );
+    final invalidSessionText =
+        context.tr('Session tidak valid.', 'Invalid session.');
+    final enabledText = context.tr(
+      'Keamanan sidik jari aktif.',
+      'Fingerprint security is enabled.',
+    );
+    final enableFailedText = context.tr(
+      'Gagal mengaktifkan sidik jari.',
+      'Failed to enable fingerprint.',
+    );
+    final disabledText = context.tr(
+      'Keamanan sidik jari dinonaktifkan.',
+      'Fingerprint security disabled.',
+    );
 
     if (enable) {
       final password = await _showPasswordConfirmationDialog();
@@ -75,22 +100,19 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
 
       try {
         await BackendService.verifyCurrentPassword(password);
+        if (!mounted) return;
         final authenticated = await AdminBiometricService.authenticate(
-          reason: context.tr(
-            'Verifikasi sidik jari Anda untuk mengaktifkan keamanan aplikasi.',
-            'Verify your fingerprint to enable app security.',
-          ),
+          reason: reasonText,
           requireEnabled: false,
         );
+        if (!mounted) return;
 
         if (!authenticated) {
           if (mounted) {
             setState(() => _biometricEnabled = false);
           }
           messenger.showSnackBar(SnackBar(
-            content: Text(context.tr(
-                'Aktivasi sidik jari dibatalkan.',
-                'Fingerprint activation canceled.')),
+            content: Text(activationCancelledText),
             backgroundColor: AppTheme.warningColor,
           ));
           return;
@@ -102,20 +124,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             setState(() => _biometricEnabled = false);
           }
           messenger.showSnackBar(SnackBar(
-            content: Text(context.tr('Session tidak valid.', 'Invalid session.')),
+            content: Text(invalidSessionText),
             backgroundColor: AppTheme.dangerColor,
           ));
           return;
         }
 
         await AdminBiometricService.enableForCurrentAdmin(uid: uid);
+        if (!mounted) return;
         messenger.showSnackBar(SnackBar(
-          content: Text(context.tr(
-              'Keamanan sidik jari aktif.',
-              'Fingerprint security is enabled.')),
+          content: Text(enabledText),
           backgroundColor: AppTheme.successColor,
         ));
       } on BackendException catch (e) {
+        if (!mounted) return;
         if (mounted) {
           setState(() => _biometricEnabled = false);
         }
@@ -124,13 +146,12 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           backgroundColor: AppTheme.dangerColor,
         ));
       } catch (_) {
+        if (!mounted) return;
         if (mounted) {
           setState(() => _biometricEnabled = false);
         }
         messenger.showSnackBar(SnackBar(
-          content: Text(context.tr(
-              'Gagal mengaktifkan sidik jari.',
-              'Failed to enable fingerprint.')),
+          content: Text(enableFailedText),
           backgroundColor: AppTheme.dangerColor,
         ));
       }
@@ -138,10 +159,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     }
 
     await AdminBiometricService.disable();
+    if (!mounted) return;
     messenger.showSnackBar(SnackBar(
-      content: Text(context.tr(
-          'Keamanan sidik jari dinonaktifkan.',
-          'Fingerprint security disabled.')),
+      content: Text(disabledText),
       backgroundColor: AppTheme.successColor,
     ));
   }
