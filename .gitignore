@@ -170,3 +170,7 @@ Thumbs.db
 .history
 .svn/
 migrate_working_dir/
+
+# Local transient files (do not commit)
+push_out.txt
+.tmp_head_commit.txt

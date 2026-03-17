@@ -42,6 +42,18 @@ class AdminBiometricService {
     return enabled && refreshToken != null && refreshToken.isNotEmpty;
   }
 
+  static Future<bool> _canPromptForBiometrics() async {
+    try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      if (!canCheck || !isSupported) return false;
+      final biometrics = await _localAuth.getAvailableBiometrics();
+      return biometrics.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> enableForCurrentAdmin({required String uid}) async {
     if (!await isSupportedOnDevice()) return;
 
@@ -60,12 +72,14 @@ class AdminBiometricService {
     await _storage.delete(key: _adminUidKey);
   }
 
-  static Future<bool> authenticate() async {
+  static Future<bool> authenticate({String? reason, bool requireEnabled = true}) async {
     try {
-      if (!await canUseBiometricLogin()) return false;
+      // When enabling biometrics, we must allow prompting even if the
+      // feature isn't enabled yet (no stored refresh token).
+      if (!await _canPromptForBiometrics()) return false;
+      if (requireEnabled && !await canUseBiometricLogin()) return false;
       return await _localAuth.authenticate(
-        localizedReason:
-            'Sentuh sensor sidik jari untuk melanjutkan sebagai admin.',
+        localizedReason: reason ?? 'Sentuh sensor sidik jari untuk melanjutkan sebagai admin.',
         options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,

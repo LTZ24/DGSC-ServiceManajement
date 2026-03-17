@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/admin_biometric_service.dart';
+import '../../services/app_log_service.dart';
 import '../../services/backend_types.dart';
 import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
@@ -45,181 +46,190 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     }
   }
 
-  Future<void> _showToggleBiometricDialog() async {
-    if (_biometricEnabled) {
-      // Disable fingerprint login
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title:
-              Text(context.tr('Nonaktifkan Sidik Jari', 'Disable Fingerprint')),
-          content: Text(context.tr(
-            'Login dengan sidik jari akan dinonaktifkan. Anda tetap bisa login menggunakan password.',
-            'Fingerprint login will be disabled. You can still log in with your password.',
-          )),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.tr('Batal', 'Cancel')),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.dangerColor),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(context.tr('Nonaktifkan', 'Disable')),
-            ),
-          ],
+  Future<void> _showToggleBiometricDialog(bool enable) async {
+    final auth = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    final enableReason = context.tr(
+      'Verifikasi sidik jari Anda untuk mengaktifkan login cepat.',
+      'Verify your fingerprint to enable quick login.',
+    );
+    final activationCancelled = context.tr(
+      'Aktivasi sidik jari dibatalkan.',
+      'Fingerprint activation canceled.',
+    );
+    final enabledSuccess = context.tr(
+      'Login sidik jari berhasil diaktifkan.',
+      'Fingerprint login enabled successfully.',
+    );
+    final disabledSuccess = context.tr(
+      'Login sidik jari dinonaktifkan.',
+      'Fingerprint login disabled.',
+    );
+    final errorPrefix = context.tr('Terjadi kesalahan', 'An error occurred');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.tr('Konfirmasi', 'Confirm')),
+        content: Text(
+          enable
+              ? context.tr(
+                  'Aktifkan login sidik jari?',
+                  'Enable fingerprint login?',
+                )
+              : context.tr(
+                  'Nonaktifkan login sidik jari?',
+                  'Disable fingerprint login?',
+                ),
         ),
-      );
-      if (confirm == true) {
-        await AdminBiometricService.disable();
-        if (mounted) {
-          setState(() => _biometricEnabled = false);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(context.tr('Login sidik jari dinonaktifkan.',
-                'Fingerprint login disabled.')),
-          ));
-        }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.tr('Batal', 'Cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: enable ? AppTheme.successColor : AppTheme.dangerColor,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(context.tr(enable ? 'Aktifkan' : 'Nonaktifkan', enable ? 'Enable' : 'Disable')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) {
+      // If user cancels, revert the switch state visually
+      if (mounted) {
+        setState(() {
+          _biometricEnabled = !enable;
+        });
       }
       return;
     }
 
-    // Enable fingerprint — confirm with password
-    final passwordCtrl = TextEditingController();
-    var obscure = true;
-    var isChecking = false;
-    String? dialogError;
+    // If enabling, show password dialog first
+    if (enable) {
+      final password = await _showPasswordConfirmationDialog();
+      if (password == null || password.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _biometricEnabled = false; // Revert switch
+          });
+        }
+        return;
+      }
 
-    await showDialog<void>(
+      try {
+        await BackendService.verifyCurrentPassword(password);
+
+        final authenticated = await AdminBiometricService.authenticate(
+          reason: enableReason,
+          requireEnabled: false,
+        );
+
+        if (!authenticated) {
+          await AppLogService.log(
+            'Biometric activation cancelled/failed',
+            level: 'WARN',
+          );
+          messenger.showSnackBar(SnackBar(
+            content: Text(activationCancelled),
+            backgroundColor: Colors.orange,
+          ));
+          if (mounted) {
+            setState(() {
+              _biometricEnabled = false; // Revert switch
+            });
+          }
+          return;
+        }
+
+        await AdminBiometricService.enableForCurrentAdmin(uid: auth.currentUser!.uid);
+        await AppLogService.log('Biometric login enabled');
+        messenger.showSnackBar(SnackBar(
+          content: Text(enabledSuccess),
+          backgroundColor: Colors.green,
+        ));
+        // State is already set, no need to call setState again
+      } on BackendException catch (e) {
+        messenger.showSnackBar(SnackBar(
+          content: Text(e.message),
+          backgroundColor: Colors.red,
+        ));
+        if (mounted) {
+          setState(() {
+            _biometricEnabled = false; // Revert switch on error
+          });
+        }
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(
+          content: Text('$errorPrefix: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ));
+        if (mounted) {
+          setState(() {
+            _biometricEnabled = false; // Revert switch on error
+          });
+        }
+      }
+    } else {
+      // Disabling
+      await AdminBiometricService.disable();
+      await AppLogService.log('Biometric login disabled');
+      messenger.showSnackBar(SnackBar(
+        content: Text(disabledSuccess),
+        backgroundColor: Colors.green,
+      ));
+      // State is already set
+    }
+  }
+
+  Future<String?> _showPasswordConfirmationDialog() async {
+    final passwordCtrl = TextEditingController();
+    var obscurePassword = true;
+
+    return showDialog<String>(
       context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) => AlertDialog(
-          title: Row(
-            children: [
-              const Icon(Icons.fingerprint_rounded,
-                  color: AppTheme.primaryColor),
-              const SizedBox(width: 10),
-              Text(context.tr('Aktifkan Sidik Jari', 'Enable Fingerprint')),
-            ],
-          ),
-          content: SizedBox(
-            width: 360,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  context.tr(
-                    'Konfirmasi dengan password akun admin untuk mengaktifkan login sidik jari.',
-                    'Confirm with your admin account password to enable fingerprint login.',
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(context.tr('Konfirmasi Password', 'Confirm Password')),
+              content: TextField(
+                controller: passwordCtrl,
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  labelText: context.tr('Password Admin', 'Admin Password'),
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
                   ),
-                  style: Theme.of(ctx).textTheme.bodySmall,
                 ),
-                const SizedBox(height: 16),
-                if (dialogError != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppTheme.dangerColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      dialogError!,
-                      style: const TextStyle(
-                          color: AppTheme.dangerColor, fontSize: 12),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                StatefulBuilder(
-                  builder: (_, setInner) => TextField(
-                    controller: passwordCtrl,
-                    obscureText: obscure,
-                    decoration: InputDecoration(
-                      labelText: context.tr('Password Admin', 'Admin Password'),
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(obscure
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined),
-                        onPressed: () => setInner(() => obscure = !obscure),
-                      ),
-                    ),
-                  ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(context.tr('Batal', 'Cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx, passwordCtrl.text);
+                  },
+                  child: Text(context.tr('Konfirmasi', 'Confirm')),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: isChecking ? null : () => Navigator.pop(ctx),
-              child: Text(context.tr('Batal', 'Cancel')),
-            ),
-            ElevatedButton(
-              onPressed: isChecking
-                  ? null
-                  : () async {
-                      final password = passwordCtrl.text;
-                      if (password.isEmpty) {
-                        setModalState(() => dialogError = context.tr(
-                            'Password wajib diisi.', 'Password is required.'));
-                        return;
-                      }
-                      setModalState(() {
-                        isChecking = true;
-                        dialogError = null;
-                      });
-                      try {
-                        final email = _profile?['email'] as String? ??
-                            BackendService.currentUser?.email ??
-                            '';
-                        await BackendService.signIn(email, password);
-                        final uid = BackendService.currentUser?.uid ?? '';
-                        await AdminBiometricService.enableForCurrentAdmin(
-                            uid: uid);
-                        if (!ctx.mounted) return;
-                        Navigator.pop(ctx);
-                        if (mounted) {
-                          setState(() => _biometricEnabled = true);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(context.tr(
-                              'Login sidik jari berhasil diaktifkan!',
-                              'Fingerprint login enabled!',
-                            )),
-                            backgroundColor: AppTheme.successColor,
-                          ));
-                        }
-                      } on BackendException catch (e) {
-                        setModalState(() {
-                          isChecking = false;
-                          dialogError = e.message.isNotEmpty
-                              ? e.message
-                              : context.tr(
-                                  'Password salah.', 'Wrong password.');
-                        });
-                      } catch (_) {
-                        setModalState(() {
-                          isChecking = false;
-                          dialogError = context.tr(
-                              'Konfirmasi gagal. Periksa password.',
-                              'Confirmation failed. Check your password.');
-                        });
-                      }
-                    },
-              child: isChecking
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white))
-                  : Text(context.tr('Aktifkan', 'Enable')),
-            ),
-          ],
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
-    passwordCtrl.dispose();
   }
 
   Future<void> _showAdminResetPasswordDialog() async {
@@ -634,10 +644,18 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         'Inactive — enable for passwordless login')),
                 trailing: Switch(
                   value: _biometricEnabled,
-                  onChanged: (_) => _showToggleBiometricDialog(),
-                  activeThumbColor: AppTheme.successColor,
+                  onChanged: _biometricSupported
+                      ? (bool value) {
+                          setState(() => _biometricEnabled = value);
+                          _showToggleBiometricDialog(value);
+                        }
+                      : null,
                 ),
-                onTap: _showToggleBiometricDialog,
+                onTap: () {
+                  final nextValue = !_biometricEnabled;
+                  setState(() => _biometricEnabled = nextValue);
+                  _showToggleBiometricDialog(nextValue);
+                },
               ),
             ),
           ],
@@ -816,8 +834,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 ListTile(
                   leading: Icon(Icons.storage, color: AppTheme.primaryColor),
                   title:
-                      Text(context.tr('Server / Backend', 'Server / Backend')),
-                  subtitle: const Text('Supabase PostgreSQL (Cloud)'),
+                    Text(context.tr('Server', 'Server')),
+                  subtitle: Text(
+                    context.tr('Supabase PostgreSQL', 'Supabase PostgreSQL')),
                   trailing: const Icon(Icons.cloud_done,
                       color: AppTheme.successColor),
                 ),
@@ -836,6 +855,20 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          // ── Log ────────────────────────────────────────────────
+          const SizedBox(height: 20),
+          _settingsCard(
+            child: ListTile(
+              leading: const Icon(Icons.receipt_long, color: AppTheme.primaryColor),
+              title: Text(context.tr('Log / Log History', 'Log / Log History')),
+              subtitle: Text(context.tr(
+                  'Lihat log aplikasi (start & error) dan unduh untuk laporan.',
+                  'View app logs (startup & errors) and download for reports.')),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.pushNamed(context, '/admin/logs'),
             ),
           ),
 

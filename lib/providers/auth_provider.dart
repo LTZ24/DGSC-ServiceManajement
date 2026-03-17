@@ -257,13 +257,17 @@ class AuthProvider extends ChangeNotifier {
 
   /// Logout from Supabase Auth — clear state instantly, sign out in background
   Future<void> logout() async {
+    final biometricEnabled = await AdminBiometricService.isEnabled();
+    if (biometricEnabled) {
+      // Instead of a full sign-out, just clear the local session.
+      // This keeps the refresh token valid for the next biometric login.
+      await BackendService.signOut(localOnly: true);
+    } else {
+      // Perform a full sign-out if biometrics are not used.
+      await BackendService.signOut();
+    }
     _profile = null;
-    _error = null;
     notifyListeners();
-
-    // Await local-only sign out to ensure BackendService.currentUser becomes null
-    // before the UI navigates back to Home (prevents biometric prompt on logout).
-    await BackendService.signOut(localOnly: true);
   }
 
   void clearError() {

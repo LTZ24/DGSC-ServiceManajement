@@ -11,6 +11,7 @@ import 'config/theme.dart';
 import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/app_log_service.dart';
 import 'services/backend_service.dart';
 import 'services/diagnosis_config_service.dart';
 import 'services/push_notification_service.dart';
@@ -45,26 +46,46 @@ import 'screens/admin/ppob_settings_screen.dart';
 import 'screens/admin/ppob_receipt_settings_screen.dart';
 import 'screens/admin/store_settings_screen.dart';
 import 'screens/admin/admin_settings_screen.dart';
+import 'screens/admin/admin_log_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await Supabase.initialize(
-    url: const String.fromEnvironment(
-      'SUPABASE_URL',
-      defaultValue: 'https://your-project.supabase.co',
-    ),
-    anonKey: const String.fromEnvironment(
-      'SUPABASE_ANON_KEY',
-      defaultValue: 'your-anon-key',
-    ),
-  );
-  await DiagnosisConfigService.loadLocalDatasetIntoEngine();
-  Future.microtask(() => DiagnosisConfigService.syncPublishedDataset());
-  await initializeDateFormatting('id_ID');
-  await initializeDateFormatting('en_US');
-  await PushNotificationService.initialize();
-  runApp(const DGSCApp());
+
+  await AppLogService.initialize();
+
+  FlutterError.onError = (details) {
+    AppLogService.logFlutterError(details);
+    FlutterError.presentError(details);
+  };
+
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    AppLogService.logError(error, stack);
+    return true;
+  };
+
+  runZonedGuarded(() async {
+    await Firebase.initializeApp();
+    await Supabase.initialize(
+      url: const String.fromEnvironment(
+        'SUPABASE_URL',
+        defaultValue: 'https://your-project.supabase.co',
+      ),
+      anonKey: const String.fromEnvironment(
+        'SUPABASE_ANON_KEY',
+        defaultValue: 'your-anon-key',
+      ),
+    );
+    await DiagnosisConfigService.loadLocalDatasetIntoEngine();
+    Future.microtask(() => DiagnosisConfigService.syncPublishedDataset());
+    await initializeDateFormatting('id_ID');
+    await initializeDateFormatting('en_US');
+    await PushNotificationService.initialize();
+
+    await AppLogService.log('App initialized');
+    runApp(const DGSCApp());
+  }, (error, stack) {
+    AppLogService.logError(error, stack);
+  });
 }
 
 class DGSCApp extends StatefulWidget {
@@ -187,6 +208,7 @@ class _DGSCAppState extends State<DGSCApp> {
               '/admin/diagnosis-editor': (context) =>
                   const AdminDiagnosisEditorScreen(),
               '/admin/settings': (context) => const AdminSettingsScreen(),
+              '/admin/logs': (context) => const AdminLogScreen(),
             },
           );
         },

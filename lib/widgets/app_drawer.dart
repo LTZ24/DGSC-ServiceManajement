@@ -100,13 +100,37 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             onTap: () async {
-              Navigator.pop(context);
-              if (!isGuest) {
-                await auth.logout();
+              final navigator = Navigator.of(context);
+              final auth = context.read<AuthProvider>();
+
+              navigator.pop();
+              if (isGuest) {
+                navigator.pushNamedAndRemoveUntil('/home', (r) => false);
+                return;
               }
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                    context, '/home', (r) => false);
+
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(context.tr('Keluar', 'Logout')),
+                  content: Text(context
+                      .tr('Keluar dari akun?', 'Log out from this account?')),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text(context.tr('Batal', 'Cancel')),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: Text(context.tr('Keluar', 'Logout')),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirmed ?? false) {
+                await auth.logout();
+                navigator.pushNamedAndRemoveUntil('/home', (r) => false);
               }
             },
           ),

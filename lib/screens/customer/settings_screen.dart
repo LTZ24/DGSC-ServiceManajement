@@ -193,9 +193,9 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                 ListTile(
                   leading: Icon(Icons.storage, color: AppTheme.primaryColor),
                   title:
-                      Text(context.tr('Server / Backend', 'Server / Backend')),
-                  subtitle: Text(context.tr('Supabase PostgreSQL (Cloud)',
-                      'Supabase PostgreSQL (Cloud)')),
+                    Text(context.tr('Server', 'Server')),
+                  subtitle: Text(
+                    context.tr('Supabase PostgreSQL', 'Supabase PostgreSQL')),
                   trailing: const Icon(Icons.cloud_done,
                       color: AppTheme.successColor),
                 ),
