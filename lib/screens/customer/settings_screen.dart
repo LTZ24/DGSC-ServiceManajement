@@ -188,7 +188,7 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                   leading: const Icon(Icons.info_outline,
                       color: AppTheme.primaryColor),
                   title: Text(context.tr('Versi Aplikasi', 'App Version')),
-                  trailing: const Text('1.0.2',
+                  trailing: const Text('1.0.1',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 ListTile(
