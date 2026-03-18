@@ -1,10 +1,9 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 class AdminBiometricService {
-  static const _enabledKey = 'admin_biometric_enabled';
-  static const _refreshTokenKey = 'admin_biometric_refresh_token';
+  static const _enabledAdminKey = 'security_enabled_admin';
+  static const _enabledCustomerKey = 'security_enabled_customer';
   static const _adminUidKey = 'admin_biometric_admin_uid';
 
   static const FlutterSecureStorage _storage = FlutterSecureStorage(
@@ -27,7 +26,12 @@ class AdminBiometricService {
   }
 
   static Future<bool> isEnabled() async {
-    return await _storage.read(key: _enabledKey) == 'true';
+    return await isEnabledForRole('admin');
+  }
+
+  static Future<bool> isEnabledForRole(String role) async {
+    final key = role == 'admin' ? _enabledAdminKey : _enabledCustomerKey;
+    return await _storage.read(key: key) == 'true';
   }
 
   static Future<String?> getStoredAdminUid() {
@@ -37,9 +41,7 @@ class AdminBiometricService {
   static Future<bool> canUseBiometricLogin() async {
     final supported = await isSupportedOnDevice();
     if (!supported) return false;
-    final enabled = await isEnabled();
-    final refreshToken = await _storage.read(key: _refreshTokenKey);
-    return enabled && refreshToken != null && refreshToken.isNotEmpty;
+    return await isEnabled();
   }
 
   static Future<bool> _canPromptForBiometrics() async {
@@ -57,18 +59,26 @@ class AdminBiometricService {
   static Future<void> enableForCurrentAdmin({required String uid}) async {
     if (!await isSupportedOnDevice()) return;
 
-    final session = supabase.Supabase.instance.client.auth.currentSession;
-    final refreshToken = session?.refreshToken;
-    if (refreshToken == null || refreshToken.isEmpty) return;
-
-    await _storage.write(key: _enabledKey, value: 'true');
-    await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    await _storage.write(key: _enabledAdminKey, value: 'true');
     await _storage.write(key: _adminUidKey, value: uid);
   }
 
+  static Future<void> enableForCustomer() async {
+    if (!await isSupportedOnDevice()) return;
+    await _storage.write(key: _enabledCustomerKey, value: 'true');
+  }
+
+  static Future<void> disableForRole(String role) async {
+    final key = role == 'admin' ? _enabledAdminKey : _enabledCustomerKey;
+    await _storage.delete(key: key);
+    if (role == 'admin') {
+      await _storage.delete(key: _adminUidKey);
+    }
+  }
+
   static Future<void> disable() async {
-    await _storage.delete(key: _enabledKey);
-    await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _enabledAdminKey);
+    await _storage.delete(key: _enabledCustomerKey);
     await _storage.delete(key: _adminUidKey);
   }
 
@@ -77,7 +87,7 @@ class AdminBiometricService {
       // When enabling biometrics, we must allow prompting even if the
       // feature isn't enabled yet (no stored refresh token).
       if (!await _canPromptForBiometrics()) return false;
-      if (requireEnabled && !await canUseBiometricLogin()) return false;
+      if (requireEnabled && !await isEnabled()) return false;
       return await _localAuth.authenticate(
         localizedReason: reason ?? 'Sentuh sensor sidik jari untuk melanjutkan sebagai admin.',
         options: const AuthenticationOptions(
@@ -93,15 +103,6 @@ class AdminBiometricService {
   }
 
   static Future<bool> restoreAdminSession() async {
-    final refreshToken = await _storage.read(key: _refreshTokenKey);
-    if (refreshToken == null || refreshToken.isEmpty) return false;
-
-    try {
-      final response =
-          await supabase.Supabase.instance.client.auth.setSession(refreshToken);
-      return response.session != null;
-    } catch (_) {
-      return false;
-    }
+    return false;
   }
 }

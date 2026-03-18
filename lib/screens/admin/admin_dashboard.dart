@@ -33,8 +33,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             title: Text(context.tr('Keluar dari akun?', 'Log out from this account?')),
             content: Text(
               context.tr(
-                'Jika kembali dari dashboard, Anda akan logout dan masuk ke halaman beranda.',
-                'If you go back from the dashboard, you will be logged out and returned to the home page.',
+                'Jika kembali dari dashboard, Anda akan logout dan masuk ke halaman login.',
+                'If you go back from the dashboard, you will be logged out and returned to the login page.',
               ),
             ),
             actions: [
@@ -56,7 +56,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     await context.read<AuthProvider>().logout();
     if (!mounted) return;
 
-    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/login',
+      (route) => false,
+      arguments: {'role': 'admin'},
+    );
   }
 
   @override

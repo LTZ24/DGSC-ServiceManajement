@@ -7,8 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/theme.dart';
+import 'screens/home_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
-import 'screens/auth/login_screen.dart';
 import 'screens/customer/customer_dashboard.dart';
 import 'services/admin_biometric_service.dart';
 import 'services/backend_service.dart';
@@ -23,7 +23,7 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   static const String _lastActiveKey = 'last_active_time';
-  static const int _timeoutMinutes = 1;
+  static const int _timeoutMinutes = 5;
 
   final LocalAuthentication _localAuth = LocalAuthentication();
   final TextEditingController _unlockPasswordController =
@@ -33,7 +33,9 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   bool _isLocked = false;
   bool _isLoading = true;
   bool _unlocking = false;
-  bool _biometricEnabledForAdmin = false;
+  bool _securityEnabledForRole = false;
+  bool _hasFingerprint = false;
+  bool _hasFaceId = false;
   String? _role;
   String? _unlockError;
 
@@ -84,20 +86,28 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     }
 
     final biometricEnabled = role == 'admin'
-        ? await AdminBiometricService.isEnabled()
-        : false;
+        ? await AdminBiometricService.isEnabledForRole('admin')
+        : await AdminBiometricService.isEnabledForRole('customer');
+
+    await _refreshBiometricCapabilities();
 
     if (role == 'admin' && biometricEnabled) {
       setState(() {
         _role = role;
         _isLocked = true;
-        _biometricEnabledForAdmin = true;
+        _securityEnabledForRole = true;
+      });
+    } else if (role == 'customer' && biometricEnabled) {
+      setState(() {
+        _role = role;
+        _isLocked = true;
+        _securityEnabledForRole = true;
       });
     } else {
       setState(() {
         _role = role;
         _isLocked = false;
-        _biometricEnabledForAdmin = biometricEnabled;
+        _securityEnabledForRole = biometricEnabled;
       });
     }
 
@@ -105,6 +115,28 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _refreshBiometricCapabilities() async {
+    try {
+      final types = await _localAuth.getAvailableBiometrics();
+      if (!mounted) return;
+      final hasFingerprint = types.contains(BiometricType.fingerprint);
+      final hasFace = types.contains(BiometricType.face) ||
+          (!hasFingerprint &&
+              (types.contains(BiometricType.strong) ||
+                  types.contains(BiometricType.weak)));
+      setState(() {
+        _hasFingerprint = hasFingerprint;
+        _hasFaceId = hasFace;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _hasFingerprint = false;
+        _hasFaceId = false;
+      });
+    }
   }
 
   Future<String?> _resolveRole() async {
@@ -144,13 +176,13 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
     await _syncProviderProfile();
     final role = _role ?? await _resolveRole();
-    if (role != 'admin') return;
+    if (role != 'admin' && role != 'customer') return;
 
-    final biometricEnabled = await AdminBiometricService.isEnabled();
+    final biometricEnabled = await AdminBiometricService.isEnabledForRole(role!);
     if (!biometricEnabled) {
       if (mounted) {
         setState(() {
-          _biometricEnabledForAdmin = false;
+          _securityEnabledForRole = false;
         });
       }
       return;
@@ -158,9 +190,11 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
     if (mounted) {
       setState(() {
-        _biometricEnabledForAdmin = true;
+        _securityEnabledForRole = true;
       });
     }
+
+    await _refreshBiometricCapabilities();
 
     final lastActive = prefs.getInt(_lastActiveKey);
     if (lastActive == null) return;
@@ -177,15 +211,24 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     }
   }
 
-  Future<bool> _authenticateBiometric() async {
+  Future<bool> _authenticateBiometric({String? preferred}) async {
     try {
       final canCheckBiometrics = await _localAuth.canCheckBiometrics;
       final canAuthenticate =
           canCheckBiometrics || await _localAuth.isDeviceSupported();
       if (!canAuthenticate) return false;
 
+      if (preferred == 'fingerprint' && !_hasFingerprint) return false;
+      if (preferred == 'face' && !_hasFaceId) return false;
+
+      final reason = preferred == 'face'
+          ? 'Gunakan Face ID/Face Recognition untuk membuka DGSC Service'
+          : preferred == 'fingerprint'
+              ? 'Gunakan sidik jari untuk membuka DGSC Service'
+              : 'Gunakan biometrik untuk membuka DGSC Service';
+
       final didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Gunakan sidik jari untuk membuka DGSC Service',
+        localizedReason: reason,
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: true,
@@ -208,7 +251,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     final password = _unlockPasswordController.text;
     if (password.isEmpty) {
       setState(() {
-        _unlockError = 'Masukkan password admin.';
+        _unlockError = 'Masukkan password.';
       });
       return;
     }
@@ -244,10 +287,10 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
     final session = Supabase.instance.client.auth.currentSession;
     if (session == null) {
-      return const LoginScreen();
+      return const HomeScreen();
     }
 
-    if (_isLocked && _role == 'admin') {
+    if (_isLocked && (_role == 'admin' || _role == 'customer')) {
       final theme = Theme.of(context);
       return Scaffold(
         body: Container(
@@ -288,7 +331,7 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Konfirmasi password atau sidik jari untuk membuka aplikasi admin.',
+                          'Konfirmasi password atau biometrik untuk membuka aplikasi.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodySmall,
                         ),
@@ -301,13 +344,15 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                                 obscureText: true,
                                 enabled: !_unlocking,
                                 onSubmitted: (_) => _unlockWithPassword(),
-                                decoration: const InputDecoration(
-                                  labelText: 'Password Admin',
+                                decoration: InputDecoration(
+                                  labelText: _role == 'admin'
+                                      ? 'Password Admin'
+                                      : 'Password Customer',
                                   prefixIcon: Icon(Icons.lock_outline),
                                 ),
                               ),
                             ),
-                            if (_biometricEnabledForAdmin) ...[
+                            if (_securityEnabledForRole && _hasFingerprint) ...[
                               const SizedBox(width: 10),
                               SizedBox(
                                 height: 52,
@@ -315,9 +360,27 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
                                 child: IconButton.filledTonal(
                                   onPressed: _unlocking
                                       ? null
-                                      : () => _authenticateBiometric(),
+                                      : () => _authenticateBiometric(
+                                            preferred: 'fingerprint',
+                                          ),
                                   icon: const Icon(Icons.fingerprint),
                                   tooltip: 'Buka dengan Sidik Jari',
+                                ),
+                              ),
+                            ],
+                            if (_securityEnabledForRole && _hasFaceId) ...[
+                              const SizedBox(width: 10),
+                              SizedBox(
+                                height: 52,
+                                width: 52,
+                                child: IconButton.filledTonal(
+                                  onPressed: _unlocking
+                                      ? null
+                                      : () => _authenticateBiometric(
+                                            preferred: 'face',
+                                          ),
+                                  icon: const Icon(Icons.face_rounded),
+                                  tooltip: 'Buka dengan Face ID',
                                 ),
                               ),
                             ],

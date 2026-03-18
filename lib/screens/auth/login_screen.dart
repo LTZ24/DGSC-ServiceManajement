@@ -12,7 +12,9 @@ import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String? forcedRole;
+
+  const LoginScreen({super.key, this.forcedRole});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -46,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final roleArg = args?['role'] as String?;
+    final roleArg = widget.forcedRole ?? args?['role'] as String?;
     final requiredRole = roleArg == 'admin'
         ? 'admin'
         : roleArg == 'customer'
@@ -101,7 +103,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleForgotPassword() async {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final isAdmin = args?['role'] == 'admin';
+    final roleArg = widget.forcedRole ?? args?['role'] as String?;
+    final isAdmin = roleArg == 'admin';
     final emailController = TextEditingController(
       text: _identifierController.text.contains('@')
           ? _identifierController.text.trim()
@@ -173,7 +176,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final isAdmin = args?['role'] == 'admin';
+    final roleArg = widget.forcedRole ?? args?['role'] as String?;
+    final isAdmin = roleArg == 'admin';
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final surfaceColor = isDark ? AppTheme.darkSurface : AppTheme.lightSurface;

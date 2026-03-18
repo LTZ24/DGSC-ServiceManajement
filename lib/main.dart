@@ -170,7 +170,7 @@ class _DGSCAppState extends State<DGSCApp> {
             builder: (context, child) => GlobalRefreshWrapper(
               child: child ?? const SizedBox.shrink(),
             ),
-            initialRoute: '/auth-wrapper',
+            initialRoute: '/home',
             routes: {
               '/auth-wrapper': (context) => const AuthWrapper(),
               // Pre-login homepage (now initial)
