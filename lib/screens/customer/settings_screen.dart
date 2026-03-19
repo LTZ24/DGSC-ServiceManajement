@@ -6,6 +6,8 @@ import '../../l10n/app_text.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/admin_biometric_service.dart';
+import '../../services/backend_types.dart';
 import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
 import '../../widgets/app_drawer.dart';
@@ -21,12 +23,25 @@ class CustomerSettingsScreen extends StatefulWidget {
 
 class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
   PermissionStatus? _notificationStatus;
+  bool _biometricSupported = false;
+  bool _securityEnabled = false;
   static const String _developerUrl = 'https://github.com/LTZ24';
 
   @override
   void initState() {
     super.initState();
     _loadNotificationStatus();
+    _loadSecurityState();
+  }
+
+  Future<void> _loadSecurityState() async {
+    final supported = await AdminBiometricService.isSupportedOnDevice();
+    final enabled = await AdminBiometricService.isEnabledForRole('customer');
+    if (!mounted) return;
+    setState(() {
+      _biometricSupported = supported;
+      _securityEnabled = enabled;
+    });
   }
 
   Future<void> _loadNotificationStatus() async {
@@ -67,16 +82,151 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
   }
 
   Future<void> _openDeveloperLink() async {
+    final errorText = context.tr(
+      'Tidak bisa membuka link developer.',
+      'Could not open developer link.',
+    );
     final uri = Uri.parse(_developerUrl);
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && mounted) {
+    if (!mounted) return;
+    if (!opened) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('Tidak bisa membuka link developer.', 'Could not open developer link.')),
+          content: Text(errorText),
           backgroundColor: AppTheme.dangerColor,
         ),
       );
     }
+  }
+
+  Future<void> _toggleSecurity(bool enable) async {
+    final reasonText = context.tr(
+      'Verifikasi sidik jari Anda untuk mengaktifkan keamanan aplikasi.',
+      'Verify your fingerprint to enable app security.',
+    );
+    final activationCancelledText = context.tr(
+      'Aktivasi keamanan dibatalkan.',
+      'Security activation canceled.',
+    );
+    final enabledText = context.tr(
+      'Keamanan aplikasi aktif.',
+      'App security is enabled.',
+    );
+    final failedText = context.tr(
+      'Gagal mengaktifkan keamanan.',
+      'Failed to enable security.',
+    );
+    final disabledText = context.tr(
+      'Keamanan aplikasi dinonaktifkan.',
+      'App security disabled.',
+    );
+
+    if (enable) {
+      final password = await _showPasswordConfirmationDialog();
+      if (password == null || password.isEmpty) {
+        if (!mounted) return;
+        setState(() => _securityEnabled = false);
+        return;
+      }
+
+      try {
+        await BackendService.verifyCurrentPassword(password);
+        if (!mounted) return;
+        final authenticated = await AdminBiometricService.authenticate(
+          reason: reasonText,
+          requireEnabled: false,
+        );
+        if (!mounted) return;
+
+        if (!authenticated) {
+          if (!mounted) return;
+          setState(() => _securityEnabled = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(activationCancelledText),
+              backgroundColor: AppTheme.warningColor,
+            ),
+          );
+          return;
+        }
+
+        await AdminBiometricService.enableForCustomer();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(enabledText),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      } on BackendException catch (e) {
+        if (!mounted) return;
+        setState(() => _securityEnabled = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppTheme.dangerColor,
+          ),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _securityEnabled = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(failedText),
+            backgroundColor: AppTheme.dangerColor,
+          ),
+        );
+      }
+      return;
+    }
+
+    await AdminBiometricService.disableForRole('customer');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(disabledText),
+        backgroundColor: AppTheme.successColor,
+      ),
+    );
+  }
+
+  Future<String?> _showPasswordConfirmationDialog() async {
+    final passwordCtrl = TextEditingController();
+    var obscurePassword = true;
+
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          title: Text(context.tr('Konfirmasi Password', 'Confirm Password')),
+          content: TextField(
+            controller: passwordCtrl,
+            obscureText: obscurePassword,
+            decoration: InputDecoration(
+              labelText: context.tr('Password Customer', 'Customer Password'),
+              prefixIcon: const Icon(Icons.lock_outline),
+              suffixIcon: IconButton(
+                icon: Icon(
+                    obscurePassword ? Icons.visibility_off : Icons.visibility),
+                onPressed: () => setModalState(
+                  () => obscurePassword = !obscurePassword,
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(context.tr('Batal', 'Cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, passwordCtrl.text),
+              child: Text(context.tr('Konfirmasi', 'Confirm')),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -138,6 +288,41 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
               ),
             ),
           ),
+
+          if (_biometricSupported) ...[
+            const SizedBox(height: 12),
+            _settingsCard(
+              child: ListTile(
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                leading: CircleAvatar(
+                  backgroundColor: _securityEnabled
+                      ? AppTheme.successColor.withValues(alpha: 0.14)
+                      : AppTheme.primaryColor.withValues(alpha: 0.10),
+                  child: Icon(
+                    Icons.fingerprint,
+                    color: _securityEnabled
+                        ? AppTheme.successColor
+                        : AppTheme.primaryColor,
+                  ),
+                ),
+                title: Text(context.tr(
+                    'Keamanan Sidik Jari',
+                    'Fingerprint Security')),
+                subtitle: Text(_securityEnabled
+                    ? context.tr('Aktif untuk lock aplikasi customer.',
+                        'Enabled for customer app lock.')
+                    : context.tr('Nonaktif.', 'Disabled.')),
+                trailing: Switch(
+                  value: _securityEnabled,
+                  onChanged: (value) {
+                    setState(() => _securityEnabled = value);
+                    _toggleSecurity(value);
+                  },
+                ),
+              ),
+            ),
+          ],
 
           // ── Notifikasi ────────────────────────────────────────
           const SizedBox(height: 20),
@@ -259,7 +444,8 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                 await authProvider.logout();
                 if (context.mounted) {
                   Navigator.pushNamedAndRemoveUntil(
-                      context, '/home', (r) => false);
+                      context, '/login', (r) => false,
+                      arguments: {'role': 'customer'});
                 }
               },
             ),

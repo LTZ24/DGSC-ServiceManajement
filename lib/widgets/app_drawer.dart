@@ -105,7 +105,7 @@ class AppDrawer extends StatelessWidget {
 
               navigator.pop();
               if (isGuest) {
-                navigator.pushNamedAndRemoveUntil('/home', (r) => false);
+                navigator.pushNamedAndRemoveUntil('/login', (r) => false);
                 return;
               }
 
@@ -130,7 +130,11 @@ class AppDrawer extends StatelessWidget {
 
               if (confirmed ?? false) {
                 await auth.logout();
-                navigator.pushNamedAndRemoveUntil('/home', (r) => false);
+                navigator.pushNamedAndRemoveUntil(
+                  '/login',
+                  (r) => false,
+                  arguments: isAdmin ? {'role': 'admin'} : {'role': 'customer'},
+                );
               }
             },
           ),
@@ -215,14 +219,20 @@ class AppDrawer extends StatelessWidget {
             ? '/admin/dashboard'
             : '/customer/dashboard';
         if (route == dashboardRoute) {
-          Navigator.pushNamedAndRemoveUntil(context, route, (r) => false);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            route,
+            (r) => r.settings.name == '/auth-wrapper',
+          );
           return;
         }
 
         Navigator.pushNamedAndRemoveUntil(
           context,
           route,
-          (r) => r.settings.name == dashboardRoute,
+          (r) =>
+              r.settings.name == '/auth-wrapper' ||
+              r.settings.name == dashboardRoute,
         );
       },
     );

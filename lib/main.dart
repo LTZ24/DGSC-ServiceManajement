@@ -18,6 +18,7 @@ import 'services/push_notification_service.dart';
 import 'services/app_lock_service.dart';
 import 'screens/app_lock/app_lock_wrapper.dart';
 import 'widgets/global_refresh_wrapper.dart';
+import 'auth_wrapper.dart';
 
 // Auth screens
 import 'screens/splash_screen.dart';
@@ -173,6 +174,7 @@ class _DGSCAppState extends State<DGSCApp> {
             ),
             initialRoute: '/home',
             routes: {
+              '/auth-wrapper': (context) => const AuthWrapper(),
               // Pre-login homepage (now initial)
               '/home': (context) => const HomeScreen(),
               // Splash (optional, kept for reference)

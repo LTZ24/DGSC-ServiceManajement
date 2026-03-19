@@ -353,7 +353,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         await authProvider.logout();
                         if (context.mounted) {
                           Navigator.pushNamedAndRemoveUntil(
-                              context, '/home', (r) => false);
+                              context, '/login', (r) => false,
+                              arguments: {'role': 'customer'});
                         }
                       },
                     ),
