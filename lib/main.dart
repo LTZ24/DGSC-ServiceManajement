@@ -15,6 +15,8 @@ import 'services/app_log_service.dart';
 import 'services/backend_service.dart';
 import 'services/diagnosis_config_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/app_lock_service.dart';
+import 'screens/app_lock/app_lock_wrapper.dart';
 import 'widgets/global_refresh_wrapper.dart';
 
 // Auth screens
@@ -166,7 +168,7 @@ class _DGSCAppState extends State<DGSCApp> {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            builder: (context, child) => GlobalRefreshWrapper(
+            builder: (context, child) => AppLockWrapper(
               child: child ?? const SizedBox.shrink(),
             ),
             initialRoute: '/home',

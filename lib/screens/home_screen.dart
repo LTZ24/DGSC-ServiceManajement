@@ -39,22 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (isLoggedIn) {
       if (authProvider.isAdmin) {
-        final shouldProtect =
-            await AdminBiometricService.canUseBiometricLogin();
-        if (shouldProtect) {
-          final authenticated = await AdminBiometricService.authenticate();
-          if (!authenticated) {
-            await BackendService.signOut();
-            if (!mounted) return;
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/login',
-              (route) => false,
-              arguments: {'role': 'admin'},
-            );
-            return;
-          }
-        }
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,

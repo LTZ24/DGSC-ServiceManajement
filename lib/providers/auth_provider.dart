@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import '../services/admin_biometric_service.dart';
+ import 'package:flutter/material.dart';
 import '../services/backend_types.dart';
 import '../services/backend_service.dart';
 
@@ -194,77 +193,9 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> loginWithAdminBiometrics() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      final authenticated = await AdminBiometricService.authenticate();
-      if (!authenticated) {
-        _error = 'Autentikasi sidik jari dibatalkan atau gagal.';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      final restored = await AdminBiometricService.restoreAdminSession();
-      if (!restored) {
-        _error =
-            'Sesi sidik jari belum bisa dipulihkan. Coba lagi, atau login dengan password.';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      final current = BackendService.currentUser;
-      if (current == null) {
-        _error = 'Sesi login sidik jari belum tersedia. Silakan coba lagi.';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      _profile = await _loadProfileWithRetry(current.uid);
-      if (_profile == null || _profile?['role'] != 'admin') {
-        await BackendService.signOut();
-        await AdminBiometricService.disable();
-        _profile = null;
-        _error = 'Login sidik jari hanya tersedia untuk admin yang valid.';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      await AdminBiometricService.enableForCurrentAdmin(uid: current.uid);
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } on BackendException catch (e) {
-      _error = e.message;
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    } catch (_) {
-      _error = 'Login sidik jari gagal. Coba lagi.';
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
   /// Logout from Supabase Auth — clear state instantly, sign out in background
   Future<void> logout() async {
-    final biometricEnabled = await AdminBiometricService.isEnabled();
-    if (biometricEnabled) {
-      // Instead of a full sign-out, just clear the local session.
-      // This keeps the refresh token valid for the next biometric login.
-      await BackendService.signOut(localOnly: true);
-    } else {
-      // Perform a full sign-out if biometrics are not used.
-      await BackendService.signOut();
-    }
+    await BackendService.signOut();
     _profile = null;
     notifyListeners();
   }

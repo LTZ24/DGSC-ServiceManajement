@@ -24,8 +24,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _adminBiometricReady = false;
-  bool _loadedBiometricState = false;
 
   @override
   void initState() {
@@ -34,16 +32,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         context.read<AuthProvider>().clearError();
       }
-    });
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_loadedBiometricState) return;
-    _loadedBiometricState = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshAdminBiometricState();
     });
   }
 
@@ -91,43 +79,6 @@ class _LoginScreenState extends State<LoginScreen> {
         '/customer/dashboard',
         (route) => false,
       );
-    }
-  }
-
-  Future<void> _handleAdminBiometricLogin() async {
-    final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.loginWithAdminBiometrics();
-    if (!success || !mounted) return;
-
-    unawaited(
-      PushNotificationService.requestFirstLoginPermissions(
-        context,
-        userId: authProvider.currentUser?.uid,
-        role: 'admin',
-      ),
-    );
-
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/admin/dashboard',
-      (route) => false,
-    );
-  }
-
-  Future<void> _refreshAdminBiometricState() async {
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final isAdmin = args?['role'] == 'admin';
-    if (!isAdmin) {
-      if (mounted) {
-        setState(() => _adminBiometricReady = false);
-      }
-      return;
-    }
-
-    final ready = await AdminBiometricService.canUseBiometricLogin();
-    if (mounted) {
-      setState(() => _adminBiometricReady = ready);
     }
   }
 
@@ -487,40 +438,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     );
                                   },
                                 ),
-                                if (isAdmin && _adminBiometricReady) ...[
-                                  const SizedBox(height: 12),
-                                  Consumer<AuthProvider>(
-                                    builder: (context, auth, _) {
-                                      return SizedBox(
-                                        height: 52,
-                                        child: OutlinedButton.icon(
-                                          onPressed: auth.isLoading
-                                              ? null
-                                              : _handleAdminBiometricLogin,
-                                          icon: const Icon(
-                                              Icons.fingerprint_rounded),
-                                          label: Text(
-                                            context.tr(
-                                              'Masuk dengan Sidik Jari',
-                                              'Sign in with Fingerprint',
-                                            ),
-                                            style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            side:
-                                                BorderSide(color: borderColor),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(18),
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
                                 if (!isAdmin) ...[
                                   const SizedBox(height: 14),
                                   Row(

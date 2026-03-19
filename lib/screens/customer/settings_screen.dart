@@ -9,6 +9,7 @@ import '../../providers/theme_provider.dart';
 import '../../services/backend_service.dart';
 import '../../services/push_notification_service.dart';
 import '../../widgets/app_drawer.dart';
+import '../app_lock/app_lock_settings_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CustomerSettingsScreen extends StatefulWidget {
@@ -165,6 +166,24 @@ class _CustomerSettingsScreenState extends State<CustomerSettingsScreen> {
                               ? context.tr('Buka', 'Open')
                               : context.tr('Aktifkan', 'Enable')),
                         ),
+            ),
+          ),
+
+          // ── Keamanan ──────────────────────────────────────────
+          const SizedBox(height: 20),
+          _sectionTitle(context, context.tr('Keamanan', 'Security')),
+          _settingsCard(
+            child: ListTile(
+              leading: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
+              title: const Text('App Lock & Keamanan'),
+              subtitle: const Text('Kelola PIN dan Biometrik keamanan aplikasi'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
+                );
+              },
             ),
           ),
 

@@ -10,46 +10,54 @@ class AppLogService {
       '/storage/emulated/0/Android/media/com.dgsc.mobile/log';
   static const String _logFileName = 'app.log';
 
-  static bool _initialized = false;
+  // ✅ FIX: Completer-based init so concurrent callers all wait for the same
+  //         future, eliminating the race between _initialized=true and
+  //         _logFile assignment.
+  static Completer<void>? _initCompleter;
   static File? _logFile;
+  static File? _mirrorLogFile;
   static Future<void> _writeQueue = Future<void>.value();
 
   static Future<void> initialize() async {
-    if (_initialized) return;
-    _initialized = true;
+    if (_initCompleter != null) return _initCompleter!.future;
 
-    final file = await _resolveLogFile();
-    _logFile = file;
+    _initCompleter = Completer<void>();
+    try {
+      _logFile = await _resolveLogFile();
+      _mirrorLogFile = await _resolveAndroidMirrorLogFile();
+      await log('=== App start ===');
+      _initCompleter!.complete();
+    } catch (e, st) {
+      _initCompleter!.completeError(e, st);
+      _initCompleter = null; // allow retry
+      rethrow;
+    }
+  }
 
-    await log('=== App start ===');
+  static Future<void> _ensureInitialized() async {
+    if (_initCompleter == null) {
+      await initialize();
+    } else {
+      await _initCompleter!.future;
+    }
   }
 
   static Future<File> _resolveLogFile() async {
-    Directory dir;
-
-    if (!kIsWeb && Platform.isAndroid) {
-      dir = Directory(_androidMediaLogDir);
-      try {
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-      } catch (_) {
-        // Fallback to app documents if media dir is not writable.
-        final docs = await getApplicationDocumentsDirectory();
-        dir = Directory(p.join(docs.path, 'log'));
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-      }
-    } else {
-      final docs = await getApplicationDocumentsDirectory();
-      dir = Directory(p.join(docs.path, 'log'));
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-    }
-
+    final docs = await getApplicationDocumentsDirectory();
+    final dir = Directory(p.join(docs.path, 'log'));
+    if (!await dir.exists()) await dir.create(recursive: true);
     return File(p.join(dir.path, _logFileName));
+  }
+
+  static Future<File?> _resolveAndroidMirrorLogFile() async {
+    if (kIsWeb || !Platform.isAndroid) return null;
+    try {
+      final dir = Directory(_androidMediaLogDir);
+      if (!await dir.exists()) await dir.create(recursive: true);
+      return File(p.join(dir.path, _logFileName));
+    } catch (_) {
+      return null;
+    }
   }
 
   static String _ts() => DateTime.now().toIso8601String();
@@ -63,21 +71,17 @@ class AppLogService {
     final line = StringBuffer()
       ..write('[${_ts()}] [$level] ')
       ..write(message);
-
-    if (error != null) {
-      line.write(' | error=$error');
-    }
-    if (stackTrace != null) {
-      line.write('\n$stackTrace');
-    }
-
+    if (error != null) line.write(' | error=$error');
+    if (stackTrace != null) line.write('\n$stackTrace');
     return _appendLine(line.toString());
   }
 
-  static Future<void> logError(Object error, StackTrace stackTrace,
-      {String message = 'Unhandled error'}) {
-    return log(message, level: 'ERROR', error: error, stackTrace: stackTrace);
-  }
+  static Future<void> logError(
+    Object error,
+    StackTrace stackTrace, {
+    String message = 'Unhandled error',
+  }) =>
+      log(message, level: 'ERROR', error: error, stackTrace: stackTrace);
 
   static Future<void> logFlutterError(FlutterErrorDetails details) {
     final stack = details.stack ?? StackTrace.current;
@@ -86,86 +90,56 @@ class AppLogService {
   }
 
   static Future<void> _appendLine(String text) async {
-    if (!_initialized) {
-      await initialize();
-    }
-
-    final file = _logFile ?? await _resolveLogFile();
-
+    await _ensureInitialized();
     _writeQueue = _writeQueue.then((_) async {
       try {
-        await file.writeAsString('$text\n', mode: FileMode.append, flush: true);
-      } catch (_) {
-        // Ignore logging failures to avoid cascading crashes.
+        await _logFile!
+            .writeAsString('$text\n', mode: FileMode.append, flush: true);
+      } catch (_) {}
+      if (_mirrorLogFile != null) {
+        try {
+          await _mirrorLogFile!
+              .writeAsString('$text\n', mode: FileMode.append, flush: true);
+        } catch (_) {}
       }
     });
-
     return _writeQueue;
   }
 
+  /// Returns the log file after flushing all pending writes.
   static Future<File?> getLogFile() async {
-    if (!_initialized) {
-      await initialize();
-    }
-    final candidates = await _candidateFiles();
-    for (final file in candidates) {
+    await _ensureInitialized();
+    await _writeQueue;
+    if (_mirrorLogFile != null) {
       try {
-        if (await file.exists()) {
-          final text = await file.readAsString();
-          if (text.trim().isNotEmpty) {
-            return file;
-          }
-        }
+        if (await _mirrorLogFile!.exists()) return _mirrorLogFile;
       } catch (_) {}
     }
     return _logFile;
   }
 
+  /// Returns all log content after flushing all pending writes.
   static Future<String> readAll() async {
-    final files = await _candidateFiles();
-    final chunks = <String>[];
-
-    for (final file in files) {
-      try {
-        if (!await file.exists()) continue;
-        final text = await file.readAsString();
-        if (text.trim().isNotEmpty) {
-          chunks.add(text.trim());
-        }
-      } catch (_) {}
-    }
-
-    if (chunks.isEmpty) {
+    await _ensureInitialized();
+    await _writeQueue; // ✅ wait for all writes to flush
+    try {
+      if (!await _logFile!.exists()) return '';
+      return await _logFile!.readAsString();
+    } catch (_) {
       return '';
     }
-
-    final merged = chunks.join('\n');
-    return merged;
   }
 
-  static Future<List<File>> _candidateFiles() async {
-    final files = <File>[];
-
-    if (_logFile != null) {
-      files.add(_logFile!);
-    }
-
-    if (!kIsWeb && Platform.isAndroid) {
-      files.add(File(p.join(_androidMediaLogDir, _logFileName)));
-    }
-
+  /// Clears both primary and mirror log files.
+  static Future<void> clear() async {
+    await _ensureInitialized();
+    await _writeQueue;
     try {
-      final docs = await getApplicationDocumentsDirectory();
-      files.add(File(p.join(docs.path, 'log', _logFileName)));
+      await _logFile?.writeAsString('', mode: FileMode.write, flush: true);
     } catch (_) {}
-
-    final unique = <String>{};
-    final result = <File>[];
-    for (final file in files) {
-      if (unique.add(file.path)) {
-        result.add(file);
-      }
-    }
-    return result;
+    try {
+      await _mirrorLogFile
+          ?.writeAsString('', mode: FileMode.write, flush: true);
+    } catch (_) {}
   }
 }
