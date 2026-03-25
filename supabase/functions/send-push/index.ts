@@ -91,6 +91,8 @@ serve(async (req: Request) => {
               body: message,
             },
             data: {
+              title,
+              message,
               type: body.type ?? 'general',
               relatedId: body.relatedId ?? '',
             },
@@ -98,6 +100,16 @@ serve(async (req: Request) => {
               priority: 'HIGH',
               notification: {
                 channel_id: 'dgsc_general_notifications',
+                sound: 'default',
+                default_vibrate_timings: true,
+                default_light_settings: true,
+              },
+            },
+            apns: {
+              payload: {
+                aps: {
+                  sound: 'default',
+                },
               },
             },
           },

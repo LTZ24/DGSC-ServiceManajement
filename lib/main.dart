@@ -15,10 +15,7 @@ import 'services/app_log_service.dart';
 import 'services/backend_service.dart';
 import 'services/diagnosis_config_service.dart';
 import 'services/push_notification_service.dart';
-import 'services/app_lock_service.dart';
 import 'screens/app_lock/app_lock_wrapper.dart';
-import 'widgets/global_refresh_wrapper.dart';
-import 'auth_wrapper.dart';
 
 // Auth screens
 import 'screens/splash_screen.dart';
@@ -45,6 +42,7 @@ import 'screens/admin/customers_screen.dart';
 import 'screens/admin/finance_screen.dart';
 import 'screens/admin/spare_parts_screen.dart';
 import 'screens/admin/counter_screen.dart';
+import 'screens/admin/cashier_screen.dart';
 import 'screens/admin/ppob_settings_screen.dart';
 import 'screens/admin/ppob_receipt_settings_screen.dart';
 import 'screens/admin/store_settings_screen.dart';
@@ -54,7 +52,7 @@ import 'screens/admin/admin_log_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await AppLogService.initialize();
+  AppLogService.initialize();
 
   FlutterError.onError = (details) {
     AppLogService.logFlutterError(details);
@@ -78,17 +76,31 @@ void main() async {
         defaultValue: 'your-anon-key',
       ),
     );
-    await DiagnosisConfigService.loadLocalDatasetIntoEngine();
-    Future.microtask(() => DiagnosisConfigService.syncPublishedDataset());
     await initializeDateFormatting('id_ID');
     await initializeDateFormatting('en_US');
-    await PushNotificationService.initialize();
-
-    await AppLogService.log('App initialized');
     runApp(const DGSCApp());
+    unawaited(_initializeDeferredServices());
+    unawaited(AppLogService.log('App initialized'));
   }, (error, stack) {
     AppLogService.logError(error, stack);
   });
+}
+
+Future<void> _initializeDeferredServices() async {
+  try {
+    await Future.wait<void>([
+      DiagnosisConfigService.loadLocalDatasetIntoEngine(),
+      PushNotificationService.initialize(),
+    ]);
+    unawaited(DiagnosisConfigService.syncPublishedDataset());
+    await AppLogService.log('Deferred services initialized');
+  } catch (error, stack) {
+    await AppLogService.logError(
+      error,
+      stack,
+      message: 'Deferred service initialization failed',
+    );
+  }
 }
 
 class DGSCApp extends StatefulWidget {
@@ -118,6 +130,12 @@ class _DGSCAppState extends State<DGSCApp> {
     );
 
     Future.microtask(_syncPushSubscriptions);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await PushNotificationService.initialize();
+      if (!mounted) return;
+      await PushNotificationService.requestInitialAppPermissions();
+      await _syncPushSubscriptions();
+    });
   }
 
   Future<void> _syncPushSubscriptions() async {
@@ -174,7 +192,6 @@ class _DGSCAppState extends State<DGSCApp> {
             ),
             initialRoute: '/home',
             routes: {
-              '/auth-wrapper': (context) => const AuthWrapper(),
               // Pre-login homepage (now initial)
               '/home': (context) => const HomeScreen(),
               // Splash (optional, kept for reference)
@@ -205,6 +222,7 @@ class _DGSCAppState extends State<DGSCApp> {
               '/admin/finance': (context) => const AdminFinanceScreen(),
               '/admin/spare-parts': (context) => const AdminSparePartsScreen(),
               '/admin/counter': (context) => const AdminCounterScreen(),
+              '/admin/cashier': (context) => const AdminCashierScreen(),
                 '/admin/ppob-settings': (context) => const PpobSettingsScreen(),
                 '/admin/ppob-receipt-settings': (context) =>
                   const PpobReceiptSettingsScreen(),

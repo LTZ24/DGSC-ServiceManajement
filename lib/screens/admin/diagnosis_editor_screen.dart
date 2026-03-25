@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/theme.dart';
 import '../../l10n/app_text.dart';
@@ -20,6 +21,7 @@ class AdminDiagnosisEditorScreen extends StatefulWidget {
 class _AdminDiagnosisEditorScreenState
     extends State<AdminDiagnosisEditorScreen> {
   final TextEditingController _jsonController = TextEditingController();
+  final ScrollController _editorScrollController = ScrollController();
   bool _isLoading = true;
   bool _isSubmitting = false;
   Map<String, dynamic>? _config;
@@ -39,6 +41,7 @@ class _AdminDiagnosisEditorScreenState
 
   @override
   void dispose() {
+    _editorScrollController.dispose();
     _jsonController.dispose();
     super.dispose();
   }
@@ -250,6 +253,55 @@ class _AdminDiagnosisEditorScreenState
     });
   }
 
+  Future<void> _formatJson() async {
+    try {
+      final decoded = json.decode(_jsonController.text);
+      final pretty = const JsonEncoder.withIndent('  ').convert(decoded);
+      setState(() {
+        _jsonController.text = pretty;
+        _jsonController.selection = TextSelection.collapsed(
+          offset: pretty.length,
+        );
+        _validationMessage = context.tr(
+          'JSON berhasil dirapikan.',
+          'JSON formatted successfully.',
+        );
+      });
+    } catch (e) {
+      setState(() {
+        _validationMessage = '${context.tr('Format gagal', 'Format failed')}: $e';
+      });
+    }
+  }
+
+  Future<void> _copyJson() async {
+    await Clipboard.setData(ClipboardData(text: _jsonController.text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          context.tr(
+            'JSON berhasil disalin.',
+            'JSON copied successfully.',
+          ),
+        ),
+        backgroundColor: AppTheme.successColor,
+      ),
+    );
+  }
+
+  int get _lineCount {
+    if (_jsonController.text.isEmpty) return 0;
+    return '\n'.allMatches(_jsonController.text).length + 1;
+  }
+
+  int get _characterCount => _jsonController.text.length;
+
+  bool get _hasValidationError {
+    final message = _validationMessage?.toLowerCase() ?? '';
+    return message.contains('gagal') || message.contains('failed');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -272,17 +324,7 @@ class _AdminDiagnosisEditorScreenState
                       _buildEditorCard(),
                       const SizedBox(height: 16),
                       if (_validationMessage != null)
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.infoColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            _validationMessage!,
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
+                        _buildValidationBanner(),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -446,44 +488,134 @@ class _AdminDiagnosisEditorScreenState
   }
 
   Widget _buildEditorCard() {
+    final helperColor = Theme.of(context).colorScheme.onSurfaceVariant;
+    final surfaceTint =
+        Theme.of(context).colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.28,
+            );
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              context.tr('Editor JSON', 'JSON Editor'),
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.tr('Editor JSON', 'JSON Editor'),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _isSubmitting ? null : _formatJson,
+                      icon: const Icon(Icons.auto_fix_high_outlined),
+                      label: Text(context.tr('Rapikan', 'Format')),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _isSubmitting ? null : _copyJson,
+                      icon: const Icon(Icons.content_copy_outlined),
+                      label: Text(context.tr('Salin', 'Copy')),
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
               context.tr(
-                  'Format wajib memiliki kunci: categories, symptoms, damages, rules.',
-                  'The format must include the keys: categories, symptoms, damages, rules.'),
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+                'Pastikan struktur utama tetap memakai categories, symptoms, damages, dan rules.',
+                'Keep the top-level structure as categories, symptoms, damages, and rules.',
+              ),
+              style: TextStyle(color: helperColor, fontSize: 12.5),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 420,
-              child: TextField(
-                controller: _jsonController,
-                expands: true,
-                maxLines: null,
-                minLines: null,
-                keyboardType: TextInputType.multiline,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12.5,
-                  height: 1.45,
-                ),
-                decoration: InputDecoration(
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: const [
+                _EditorKeyChip(label: 'categories'),
+                _EditorKeyChip(label: 'symptoms'),
+                _EditorKeyChip(label: 'damages'),
+                _EditorKeyChip(label: 'rules'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: surfaceTint,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Wrap(
+                spacing: 18,
+                runSpacing: 8,
+                children: [
+                  _editorStat(
+                    context.tr('Baris', 'Lines'),
+                    _lineCount.toString(),
                   ),
-                  hintText:
-                      '{\n  "categories": [],\n  "symptoms": [],\n  "damages": [],\n  "rules": []\n}',
+                  _editorStat(
+                    context.tr('Karakter', 'Characters'),
+                    _characterCount.toString(),
+                  ),
+                  _editorStat(
+                    context.tr('Versi Draft', 'Draft Version'),
+                    _config?['draft_version']?.toString() ?? '-',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              height: 440,
+              decoration: BoxDecoration(
+                color: surfaceTint,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Scrollbar(
+                controller: _editorScrollController,
+                thumbVisibility: true,
+                child: TextField(
+                  controller: _jsonController,
+                  scrollController: _editorScrollController,
+                  expands: true,
+                  maxLines: null,
+                  minLines: null,
+                  keyboardType: TextInputType.multiline,
+                  onChanged: (_) {
+                    if (_validationMessage == null) return;
+                    setState(() => _validationMessage = null);
+                  },
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    height: 1.55,
+                  ),
+                  decoration: InputDecoration(
+                    alignLabelWithHint: true,
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    contentPadding: const EdgeInsets.all(18),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    hintText:
+                        '{\n  "categories": [],\n  "symptoms": [],\n  "damages": [],\n  "rules": []\n}',
+                    helperText: context.tr(
+                      'Tip: gunakan tombol Rapikan sebelum Validasi atau Publish.',
+                      'Tip: use Format before Validate or Publish.',
+                    ),
+                    helperStyle: TextStyle(
+                      color: helperColor,
+                      fontSize: 11.5,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -519,6 +651,84 @@ class _AdminDiagnosisEditorScreenState
         style: const TextStyle(
           color: AppTheme.primaryColor,
           fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildValidationBanner() {
+    final isError = _hasValidationError;
+    final color = isError ? AppTheme.dangerColor : AppTheme.infoColor;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isError ? Icons.error_outline_rounded : Icons.info_outline_rounded,
+            color: color,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _validationMessage!,
+              style: TextStyle(fontSize: 13, color: color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _editorStat(String label, String value) {
+    return RichText(
+      text: TextSpan(
+        style: DefaultTextStyle.of(context).style.copyWith(fontSize: 12.5),
+        children: [
+          TextSpan(
+            text: '$label: ',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          TextSpan(
+            text: value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EditorKeyChip extends StatelessWidget {
+  const _EditorKeyChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppTheme.primaryColor,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'monospace',
+          fontSize: 12,
         ),
       ),
     );

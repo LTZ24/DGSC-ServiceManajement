@@ -200,11 +200,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       drawer: const AppDrawer(isAdmin: false),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+          : RefreshIndicator.adaptive(
+              onRefresh: () => _loadProfile(showLoader: false),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Center(
                     child: Column(
                       children: [
@@ -358,8 +361,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       },
                     ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
     );

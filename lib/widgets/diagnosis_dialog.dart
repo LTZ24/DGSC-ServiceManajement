@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../config/theme.dart';
 import '../services/cf_engine.dart';
 import '../services/diagnosis_config_service.dart';
@@ -73,71 +74,126 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFD9E2EC);
+    final backgroundColor = isDark ? AppTheme.darkSurface : Colors.white;
+    final mutedColor =
+        isDark ? AppTheme.darkMutedText : const Color(0xFF64748B);
+
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.transparent,
       child: Container(
-        constraints: const BoxConstraints(maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 760, maxHeight: 720),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.24 : 0.12),
+              blurRadius: 36,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryColor,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Row(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+              child: Column(
                 children: [
-                  const Icon(Icons.medical_services, color: Colors.white, size: 24),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Diagnosis Kerusakan',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold)),
-                        Text(_stepLabel,
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 12)),
-                      ],
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF1D4ED8),
+                              Color(0xFF0EA5E9),
+                            ],
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.monitor_heart_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Diagnosis Kerusakan',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _stepLabel,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: mutedColor,
+                                height: 1.45,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Tutup',
+                        onPressed: () => Navigator.pop(context),
+                        style: IconButton.styleFrom(
+                          backgroundColor: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: isDark ? 0.26 : 0.64),
+                        ),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
+                  const SizedBox(height: 16),
+                  _StepProgress(
+                    step: _step,
+                    labels: [
+                      'Perangkat',
+                      'Gejala',
+                      'Hasil',
+                    ],
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              child: Row(
-                children: List.generate(3, (i) => Expanded(
-                  child: Container(
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      color: i <= _step
-                          ? AppTheme.primaryColor
-                          : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                )),
-              ),
-            ),
+            Divider(height: 1, color: borderColor),
             Expanded(
               child: _isPreparing
-                  ? const Center(child: CircularProgressIndicator())
+                  ? _buildLoadingState(
+                      'Menyiapkan data diagnosis...',
+                      'Dataset sedang disinkronkan.',
+                    )
                   : _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildStepContent(),
+                      ? _buildLoadingState(
+                          'Memproses diagnosis...',
+                          'Sistem sedang menghitung hasil terbaik.',
+                        )
+                      : _buildStepContent(),
             ),
-            if (!_isLoading && !_isPreparing) _buildActions(),
+            if (!_isLoading && !_isPreparing)
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: borderColor)),
+                ),
+                child: _buildActions(),
+              ),
           ],
         ),
       ),
@@ -147,14 +203,48 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
   String get _stepLabel {
     switch (_step) {
       case 0:
-        return 'Langkah 1: Pilih Jenis Perangkat';
+        return 'Langkah 1 dari 3 • Pilih jenis perangkat yang ingin diperiksa.';
       case 1:
-        return 'Langkah 2: Pilih Gejala (${_selectedSymptomIds.length} dipilih)';
+        return 'Langkah 2 dari 3 • Pilih gejala yang muncul pada perangkat.';
       case 2:
-        return 'Langkah 3: Hasil Diagnosis';
+        return 'Langkah 3 dari 3 • Tinjau hasil diagnosis dan solusi awal.';
       default:
         return '';
     }
+  }
+
+  Widget _buildLoadingState(String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 42,
+              height: 42,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildStepContent() {
@@ -171,25 +261,78 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
   }
 
   Widget _buildCategoryStep() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
       itemCount: _categories.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final cat = _categories[index];
-        return Card(
-          child: ListTile(
-            leading: Icon(
-              cat.name.toLowerCase().contains('handphone')
-                  ? Icons.phone_android
-                  : Icons.laptop,
-              color: AppTheme.primaryColor,
-              size: 32,
-            ),
-            title: Text(cat.name,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text(cat.description),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
             onTap: () => _loadSymptoms(cat),
+            child: Ink(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.9),
+                ),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.32),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDBEAFE),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Icon(
+                      _categoryIcon(cat.name),
+                      color: const Color(0xFF1D4ED8),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          cat.name,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          cat.description,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    height: 1.5,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.arrow_forward_rounded),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -197,32 +340,89 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
   }
 
   Widget _buildSymptomsStep() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
       itemCount: _symptoms.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final symptom = _symptoms[index];
         final isSelected = _selectedSymptomIds.contains(symptom.id);
-        return CheckboxListTile(
-          value: isSelected,
-          onChanged: (val) {
-            setState(() {
-              if (val == true) {
-                _selectedSymptomIds.add(symptom.id);
-              } else {
-                _selectedSymptomIds.remove(symptom.id);
-              }
-            });
-          },
-          title: Text(symptom.name, style: const TextStyle(fontSize: 14)),
-          subtitle: symptom.description != null ? Text(symptom.description!) : null,
-          secondary: Text(symptom.code,
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFF1D4ED8)
+                  : Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.9),
+            ),
+            color: isSelected
+                ? const Color(0xFFEFF6FF)
+                : Theme.of(context)
+                    .colorScheme
+                    .surfaceContainerHighest
+                    .withValues(alpha: 0.22),
+          ),
+          child: CheckboxListTile(
+            value: isSelected,
+            onChanged: (val) {
+              setState(() {
+                if (val == true) {
+                  _selectedSymptomIds.add(symptom.id);
+                } else {
+                  _selectedSymptomIds.remove(symptom.id);
+                }
+              });
+            },
+            checkboxShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 10,
+            ),
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              symptom.name,
               style: const TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12)),
-          dense: true,
-          controlAffinity: ListTileControlAffinity.leading,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: symptom.description == null
+                ? Text(
+                    symptom.code,
+                    style: const TextStyle(
+                      color: Color(0xFF1D4ED8),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          symptom.description!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          symptom.code,
+                          style: const TextStyle(
+                            color: Color(0xFF1D4ED8),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
         );
       },
     );
@@ -230,100 +430,121 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
 
   Widget _buildResultsStep() {
     if (_results.isEmpty) {
-      return const Center(
-        child: Text('Tidak ada hasil diagnosis',
-            style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(
+          'Tidak ada hasil diagnosis',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(20),
       itemCount: _results.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final result = _results[index];
         final percentage = result.cfPercentage;
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(result.damage.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 15)),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getCfColor(percentage).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${percentage.toStringAsFixed(1)}%',
-                        style: TextStyle(
-                            color: _getCfColor(percentage),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13),
+        final resultColor = _getCfColor(percentage);
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: resultColor.withValues(alpha: 0.18)),
+            color: resultColor.withValues(alpha: 0.07),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      result.damage.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: result.cfCombined.clamp(0.0, 1.0),
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor:
-                        AlwaysStoppedAnimation(_getCfColor(percentage)),
-                    minHeight: 6,
                   ),
-                ),
-                if (result.damage.description != null) ...[
-                  const SizedBox(height: 8),
-                  Text(result.damage.description!,
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.grey)),
-                ],
-                if (result.damage.solution != null) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.lightbulb_outline,
-                          size: 14, color: AppTheme.warningColor),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text('Solusi: ${result.damage.solution!}',
-                            style: const TextStyle(fontSize: 12)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: resultColor.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${percentage.toStringAsFixed(1)}%',
+                      style: TextStyle(
+                        color: resultColor,
+                        fontWeight: FontWeight.w800,
                       ),
-                    ],
+                    ),
                   ),
                 ],
-                if (result.damage.estimatedCost != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Estimasi Biaya: ${currencyFormat.format(result.damage.estimatedCost)}',
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppTheme.successColor),
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: result.cfCombined.clamp(0.0, 1.0),
+                  minHeight: 9,
+                  backgroundColor: Colors.white,
+                  valueColor: AlwaysStoppedAnimation(resultColor),
+                ),
+              ),
+              if (result.damage.description != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  result.damage.description!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.5,
                   ),
-                ],
-                if (result.damage.estimatedTime != null)
-                  Text('Estimasi Waktu: ${result.damage.estimatedTime}',
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.grey)),
+                ),
               ],
-            ),
+              if (result.damage.solution != null) ...[
+                const SizedBox(height: 12),
+                _ResultInfoRow(
+                  icon: Icons.lightbulb_outline_rounded,
+                  color: AppTheme.warningColor,
+                  text: 'Solusi: ${result.damage.solution!}',
+                ),
+              ],
+              if (result.damage.estimatedCost != null) ...[
+                const SizedBox(height: 8),
+                _ResultInfoRow(
+                  icon: Icons.payments_outlined,
+                  color: AppTheme.successColor,
+                  text:
+                      'Estimasi Biaya: ${currencyFormat.format(result.damage.estimatedCost)}',
+                ),
+              ],
+              if (result.damage.estimatedTime != null) ...[
+                const SizedBox(height: 8),
+                _ResultInfoRow(
+                  icon: Icons.schedule_outlined,
+                  color: const Color(0xFF1D4ED8),
+                  text: 'Estimasi Waktu: ${result.damage.estimatedTime}',
+                ),
+              ],
+            ],
           ),
         );
       },
     );
+  }
+
+  IconData _categoryIcon(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('laptop')) return Icons.laptop_mac_outlined;
+    if (lower.contains('tablet')) return Icons.tablet_mac_outlined;
+    return Icons.phone_android_rounded;
   }
 
   Color _getCfColor(double percentage) {
@@ -334,44 +555,132 @@ class _DiagnosisDialogState extends State<DiagnosisDialog> {
   }
 
   Widget _buildActions() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          if (_step > 0)
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => setState(() {
-                  _step--;
-                  if (_step == 0) _selectedSymptomIds.clear();
-                }),
-                child: const Text('Kembali'),
-              ),
+    return Row(
+      children: [
+        if (_step > 0)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => setState(() {
+                _step--;
+                if (_step == 0) {
+                  _selectedSymptomIds.clear();
+                  _selectedCategory = null;
+                  _symptoms = [];
+                }
+              }),
+              icon: const Icon(Icons.arrow_back_rounded),
+              label: const Text('Kembali'),
             ),
-          if (_step > 0) const SizedBox(width: 12),
-          if (_step == 1)
-            Expanded(
-              child: ElevatedButton(
-                onPressed: _calculateDiagnosis,
-                child: const Text('Diagnosis'),
-              ),
+          ),
+        if (_step > 0) const SizedBox(width: 12),
+        if (_step == 1)
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _calculateDiagnosis,
+              icon: const Icon(Icons.analytics_outlined),
+              label: const Text('Lihat Hasil'),
             ),
-          if (_step == 2 && widget.onResultSelected != null)
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  final selectedSymptoms = _symptoms
-                      .where((s) => _selectedSymptomIds.contains(s.id))
-                      .toList();
-                  widget.onResultSelected!(
-                      _results, _selectedCategory!, selectedSymptoms);
-                  Navigator.pop(context);
-                },
-                child: const Text('Gunakan Hasil'),
-              ),
+          ),
+        if (_step == 2 && widget.onResultSelected != null)
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                final selectedSymptoms = _symptoms
+                    .where((s) => _selectedSymptomIds.contains(s.id))
+                    .toList();
+                widget.onResultSelected!(
+                  _results,
+                  _selectedCategory!,
+                  selectedSymptoms,
+                );
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.check_circle_outline_rounded),
+              label: const Text('Gunakan Hasil'),
             ),
-        ],
-      ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StepProgress extends StatelessWidget {
+  const _StepProgress({
+    required this.step,
+    required this.labels,
+  });
+
+  final int step;
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(labels.length, (index) {
+        final isActive = index <= step;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(right: index == labels.length - 1 ? 0 : 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFF1D4ED8)
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  labels[index],
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isActive
+                            ? const Color(0xFF1D4ED8)
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight:
+                            isActive ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _ResultInfoRow extends StatelessWidget {
+  const _ResultInfoRow({
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.45,
+                ),
+          ),
+        ),
+      ],
     );
   }
 }

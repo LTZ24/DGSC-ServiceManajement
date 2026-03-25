@@ -1257,21 +1257,138 @@ class BackendService {
         .eq('id', int.parse(id));
   }
 
+  static String generateCashierTransactionCode() {
+    final now = DateTime.now();
+    final random = Random().nextInt(900) + 100;
+    final date =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final time =
+        '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    return 'CSR$date$time$random';
+  }
+
+  static List<Map<String, dynamic>> _normalizeCashierLineItems(dynamic rawItems) {
+    final items = (rawItems as List?) ?? const [];
+    return items
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .map((item) {
+          final qty = int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
+          final modal = _asDouble(item['modal_price']);
+          final selling = _asDouble(item['selling_price']);
+          return {
+            'part_id': item['part_id'] != null
+                ? int.tryParse(item['part_id'].toString())
+                : null,
+            'part_code': item['part_code'] ?? '',
+            'part_name': item['part_name'] ?? '',
+            'category': item['category'] ?? '',
+            'qty': qty,
+            'modal_price': modal,
+            'selling_price': selling,
+            'total_modal': modal * qty,
+            'total_selling': selling * qty,
+          };
+        })
+        .where((item) => (item['qty'] as int) > 0)
+        .toList();
+  }
+
+  static Future<void> _validateCashierLineItems(
+    List<Map<String, dynamic>> items,
+  ) async {
+    for (final item in items) {
+      final partId = item['part_id'];
+      final qty = item['qty'] as int? ?? 0;
+      if (partId == null || qty <= 0) continue;
+
+      final row = await _db
+          .from('spare_parts')
+          .select('id, part_name, stock_quantity')
+          .eq('id', partId)
+          .maybeSingle();
+      if (row == null) {
+        throw BackendException('not_found', 'Spare part tidak ditemukan.');
+      }
+
+      final stock = int.tryParse(row['stock_quantity']?.toString() ?? '0') ?? 0;
+      if (stock < qty) {
+        throw BackendException(
+          'stock_insufficient',
+          'Stok ${row['part_name'] ?? 'spare part'} tidak mencukupi.',
+        );
+      }
+    }
+  }
+
+  static Future<void> _applyCashierLineItemStock(
+    List<Map<String, dynamic>> items,
+  ) async {
+    for (final item in items) {
+      final partId = item['part_id'];
+      final qty = item['qty'] as int? ?? 0;
+      if (partId == null || qty <= 0) continue;
+
+      final row = await _db
+          .from('spare_parts')
+          .select('stock_quantity')
+          .eq('id', partId)
+          .single();
+      final currentStock =
+          int.tryParse(row['stock_quantity']?.toString() ?? '0') ?? 0;
+      await _db
+          .from('spare_parts')
+          .update(_normalizeData({
+            'stock_quantity': currentStock - qty,
+            'updated_at': FieldValue.serverTimestamp(),
+          }))
+          .eq('id', partId);
+    }
+  }
+
   static Future<DocumentReference> addCounterTransaction(
       Map<String, dynamic> data) async {
-    final modal = (data['modal_price'] ?? 0.0).toDouble();
-    final selling = (data['selling_price'] ?? 0.0).toDouble();
+    final transactionDate = data['transaction_date'] is Timestamp
+        ? (data['transaction_date'] as Timestamp).toDate()
+        : data['transaction_date'] is DateTime
+            ? data['transaction_date'] as DateTime
+            : DateTime.now();
+    final modal = _asDouble(data['modal_price']);
+    final selling = _asDouble(data['selling_price']);
+    final lineItems = _normalizeCashierLineItems(data['line_items']);
+    final receiptPayload = Map<String, dynamic>.from(
+      (data['receipt_payload'] as Map?) ?? const {},
+    );
+    if (lineItems.isNotEmpty && !receiptPayload.containsKey('line_items')) {
+      receiptPayload['line_items'] = lineItems;
+    }
+
     final inserted = await _db
         .from('counter_transactions')
         .insert(_normalizeData({
-          'transaction_date':
-              data['transaction_date'] ?? FieldValue.serverTimestamp(),
+          'transaction_code':
+              data['transaction_code'] ?? generateCashierTransactionCode(),
+          'transaction_date': Timestamp.fromDate(transactionDate),
           'category_id': data['category_id'] != null
               ? int.tryParse(data['category_id'].toString())
               : null,
-          'category_name': data['category_name'] ?? '',
+          'category_name': data['category_name'] ?? 'Kasir',
           'product_name': data['product_name'] ?? '',
+          'customer_id': data['customer_id'] != null
+              ? int.tryParse(data['customer_id'].toString())
+              : null,
+          'customer_name': data['customer_name'] ?? '',
+          'customer_phone': data['customer_phone'] ?? '',
           'customer_info': data['customer_info'] ?? '',
+          'service_id': data['service_id'] != null
+              ? int.tryParse(data['service_id'].toString())
+              : null,
+          'service_code': data['service_code'] ?? '',
+          'ppob_transaction_id': data['ppob_transaction_id'] != null
+              ? int.tryParse(data['ppob_transaction_id'].toString())
+              : null,
+          'ppob_transaction_code': data['ppob_transaction_code'] ?? '',
+          'line_items': lineItems,
+          'receipt_payload': receiptPayload,
           'modal_price': modal,
           'selling_price': selling,
           'profit': selling - modal,
@@ -1288,6 +1405,25 @@ class BackendService {
     return DocumentReference(inserted['id'].toString());
   }
 
+  static Future<DocumentReference> addCashierTransaction(
+    Map<String, dynamic> data,
+  ) async {
+    final lineItems = _normalizeCashierLineItems(data['line_items']);
+    await _validateCashierLineItems(lineItems);
+
+    final inserted = await addCounterTransaction({
+      ...data,
+      'line_items': lineItems,
+      'receipt_payload': {
+        ...(data['receipt_payload'] as Map? ?? const {}),
+        'line_items': lineItems,
+      },
+    });
+
+    await _applyCashierLineItemStock(lineItems);
+    return inserted;
+  }
+
   static Stream<QuerySnapshot<Map<String, dynamic>>> counterTransactionsStream(
       {DateTime? date}) {
     Stream<List<Map<String, dynamic>>> stream = _db
@@ -1297,6 +1433,12 @@ class BackendService {
       stream = _filterRowsByDay(stream, 'transaction_date', date);
     }
     return _streamToSnapshot(stream);
+  }
+
+  static Stream<QuerySnapshot<Map<String, dynamic>>> cashierTransactionsStream({
+    DateTime? date,
+  }) {
+    return counterTransactionsStream(date: date);
   }
 
   static Future<void> updateCounterTransaction(

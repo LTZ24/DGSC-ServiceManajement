@@ -1,6 +1,7 @@
  import 'package:flutter/material.dart';
 import '../services/backend_types.dart';
 import '../services/backend_service.dart';
+import '../services/app_lock_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? _profile;
@@ -24,6 +25,11 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     _profile = await _loadProfileWithRetry(user.uid);
+
+    final role = _profile?['role']?.toString();
+    if (role != null && role.isNotEmpty) {
+      await AppLockService.syncCurrentRole(role);
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -52,6 +58,11 @@ class AuthProvider extends ChangeNotifier {
 
       final uid = current.uid;
       _profile = await _loadProfileWithRetry(uid);
+
+      final role = _profile?['role']?.toString();
+      if (role != null && role.isNotEmpty) {
+        await AppLockService.syncCurrentRole(role);
+      }
 
       if (_profile == null) {
         await BackendService.signOut();
@@ -160,6 +171,11 @@ class AuthProvider extends ChangeNotifier {
       }
 
       _profile = await _loadProfileWithRetry(currentUser.uid);
+
+      final role = _profile?['role']?.toString();
+      if (role != null && role.isNotEmpty) {
+        await AppLockService.syncCurrentRole(role);
+      }
       if (_profile == null) {
         await BackendService.signOut();
         _error = 'Profil akun Google belum siap. Silakan coba lagi.';
@@ -195,6 +211,7 @@ class AuthProvider extends ChangeNotifier {
 
   /// Logout from Supabase Auth — clear state instantly, sign out in background
   Future<void> logout() async {
+    await AppLockService.clearSessionState();
     await BackendService.signOut();
     _profile = null;
     notifyListeners();

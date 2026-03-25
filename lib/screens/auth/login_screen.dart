@@ -8,9 +8,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_text.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/admin_biometric_service.dart';
 import '../../services/backend_service.dart';
-import '../../services/push_notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -59,14 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     TextInput.finishAutofillContext(shouldSave: true);
 
-    unawaited(
-      PushNotificationService.requestFirstLoginPermissions(
-        context,
-        userId: authProvider.currentUser?.uid,
-        role: authProvider.isAdmin ? 'admin' : 'customer',
-      ),
-    );
-
     if (authProvider.isAdmin) {
       Navigator.pushNamedAndRemoveUntil(
         context,
@@ -88,13 +78,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!success || !mounted) return;
 
-    unawaited(
-      PushNotificationService.requestFirstLoginPermissions(
-        context,
-        userId: authProvider.currentUser?.uid,
-        role: 'customer',
-      ),
-    );
     Navigator.pushNamedAndRemoveUntil(
       context,
       '/customer/dashboard',
@@ -592,23 +575,11 @@ class _GoogleLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size + 8,
-      height: size + 8,
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return SizedBox(
+      width: size + 2,
+      height: size + 2,
       child: CustomPaint(
-        size: Size.square(size),
+        size: Size.square(size + 2),
         painter: _GoogleLogoPainter(),
       ),
     );
@@ -619,32 +590,35 @@ class _GoogleLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final stroke = size.width * 0.18;
-    final rect = Offset(stroke / 2, stroke / 2) &
-        Size(size.width - stroke, size.height - stroke);
+    final radius = (size.width - stroke) / 2;
+    final rect = Rect.fromCircle(
+      center: Offset(size.width / 2, size.height / 2),
+      radius: radius,
+    );
 
     void drawArc(Color color, double start, double sweep) {
       final paint = Paint()
         ..color = color
         ..style = PaintingStyle.stroke
         ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.round;
+        ..strokeCap = StrokeCap.butt;
       canvas.drawArc(rect, start, sweep, false, paint);
     }
 
-    drawArc(const Color(0xFF4285F4), -0.35, 1.65);
-    drawArc(const Color(0xFFEA4335), 1.35, 1.1);
-    drawArc(const Color(0xFFFBBC05), 2.5, 1.05);
-    drawArc(const Color(0xFF34A853), 3.55, 1.35);
+    drawArc(const Color(0xFF4285F4), -0.42, 1.26);
+    drawArc(const Color(0xFFEA4335), 0.86, 1.38);
+    drawArc(const Color(0xFFFBBC05), 2.24, 1.02);
+    drawArc(const Color(0xFF34A853), 3.26, 1.56);
 
     final barPaint = Paint()
       ..color = const Color(0xFF4285F4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    final midY = size.height * 0.53;
+      ..strokeCap = StrokeCap.butt;
+    final midY = size.height * 0.52;
     canvas.drawLine(
-      Offset(size.width * 0.53, midY),
-      Offset(size.width * 0.88, midY),
+      Offset(size.width * 0.54, midY),
+      Offset(size.width * 0.95, midY),
       barPaint,
     );
   }

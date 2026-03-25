@@ -29,6 +29,11 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
     super.dispose();
   }
 
+  Future<void> _refreshCustomers() async {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   void _showAddDialog(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController();
@@ -227,46 +232,65 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
               ),
             ),
             Expanded(
-              child: docs.isEmpty
-                  ? Center(
-                    child: Text(context.tr('Tidak ada pelanggan', 'No customers'),
-                      style: const TextStyle(color: Colors.grey)))
-                  : ListView.builder(
-                      itemCount: docs.length,
-                      itemBuilder: (context, index) {
-                        final doc = docs[index];
-                        final data = doc.data();
-                        return AppListCard(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  AppTheme.primaryColor.withValues(alpha: 0.1),
+              child: RefreshIndicator.adaptive(
+                onRefresh: _refreshCustomers,
+                child: docs.isEmpty
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(12),
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.45,
+                            child: Center(
                               child: Text(
-                                (data['name'] ?? 'U')[0].toUpperCase(),
-                                style: const TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.bold),
+                                context.tr(
+                                  'Tidak ada pelanggan',
+                                  'No customers',
+                                ),
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             ),
-                            title: Text(data['name'] ?? '',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600, fontSize: 14)),
-                            subtitle: Text(
-                                '${data["phone"] ?? "-"} | ${data["email"] ?? "-"}',
-                                style: const TextStyle(fontSize: 12)),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: AppTheme.dangerColor),
-                              onPressed: () async {
-                                await BackendService.deleteCustomer(doc.id);
-                              },
-                            ),
                           ),
-                        );
-                      },
-                    ),
+                        ],
+                      )
+                    : ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: docs.length,
+                        itemBuilder: (context, index) {
+                          final doc = docs[index];
+                          final data = doc.data();
+                          return AppListCard(
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor:
+                                    AppTheme.primaryColor.withValues(alpha: 0.1),
+                                child: Text(
+                                  (data['name'] ?? 'U')[0].toUpperCase(),
+                                  style: const TextStyle(
+                                      color: AppTheme.primaryColor,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              title: Text(data['name'] ?? '',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, fontSize: 14)),
+                              subtitle: Text(
+                                  '${data["phone"] ?? "-"} | ${data["email"] ?? "-"}',
+                                  style: const TextStyle(fontSize: 12)),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    color: AppTheme.dangerColor),
+                                onPressed: () async {
+                                  await BackendService.deleteCustomer(doc.id);
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
             ),
           ]);
         },
@@ -274,4 +298,3 @@ class _AdminCustomersScreenState extends State<AdminCustomersScreen> {
     );
   }
 }
-

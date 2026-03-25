@@ -38,6 +38,11 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
     super.dispose();
   }
 
+  Future<void> _refreshServices() async {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   void _showCreateDialog(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     final problemCtrl = TextEditingController();
@@ -294,51 +299,66 @@ class _AdminServicesScreenState extends State<AdminServicesScreen> {
                 ),
               ),
               Expanded(
-                child: docs.isEmpty
-                    ? Center(
-                        child: Text(
-                          context.tr('Tidak ada servis', 'No services'),
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: docs.length,
-                        itemBuilder: (context, index) {
-                          final doc = docs[index];
-                          final data = Map<String, dynamic>.from(doc.data());
-                          final override = _serviceOverrides[doc.id];
-                          if (override != null) {
-                            data.addAll(override);
-                          }
-                          return _ServiceCard(
-                            docId: doc.id,
-                            data: data,
-                            currencyFormat: currencyFormat,
-                            onDataChanged: (patch) {
-                              setState(() {
-                                if (patch == null) {
+                child: RefreshIndicator.adaptive(
+                  onRefresh: _refreshServices,
+                  child: docs.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(12),
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.45,
+                              child: Center(
+                                child: Text(
+                                  context.tr('Tidak ada servis', 'No services'),
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(12),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final doc = docs[index];
+                            final data = Map<String, dynamic>.from(doc.data());
+                            final override = _serviceOverrides[doc.id];
+                            if (override != null) {
+                              data.addAll(override);
+                            }
+                            return _ServiceCard(
+                              docId: doc.id,
+                              data: data,
+                              currencyFormat: currencyFormat,
+                              onDataChanged: (patch) {
+                                setState(() {
+                                  if (patch == null) {
+                                    _serviceOverrides.remove(doc.id);
+                                  } else {
+                                    final existing =
+                                        _serviceOverrides[doc.id] ??
+                                            <String, dynamic>{};
+                                    existing.addAll(patch);
+                                    _serviceOverrides[doc.id] = existing;
+                                  }
+                                });
+                              },
+                              onDeleted: () {
+                                setState(() {
+                                  _deletedServiceIds.add(doc.id);
                                   _serviceOverrides.remove(doc.id);
-                                } else {
-                                  final existing = _serviceOverrides[doc.id] ??
-                                      <String, dynamic>{};
-                                  existing.addAll(patch);
-                                  _serviceOverrides[doc.id] = existing;
-                                }
-                              });
-                            },
-                            onDeleted: () {
-                              setState(() {
-                                _deletedServiceIds.add(doc.id);
-                                _serviceOverrides.remove(doc.id);
-                              });
-                            },
-                          );
-                        },
-                      ),
+                                });
+                              },
+                            );
+                          },
+                        ),
+                ),
               ),
             ],
           );

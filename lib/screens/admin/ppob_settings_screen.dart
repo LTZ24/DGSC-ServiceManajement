@@ -30,6 +30,10 @@ class _PpobSettingsScreenState extends State<PpobSettingsScreen> {
     }
   }
 
+  Future<void> _refreshPpobSettings() async {
+    await _prepare();
+  }
+
   Future<void> _showAppDialog({Map<String, dynamic>? data}) async {
     final isEdit = data != null;
     final idCtrl =
@@ -389,9 +393,12 @@ class _PpobSettingsScreenState extends State<PpobSettingsScreen> {
       stream: BackendService.ppobAppsStream(),
       builder: (context, snapshot) {
         final docs = snapshot.data?.docs ?? [];
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        return RefreshIndicator.adaptive(
+          onRefresh: _refreshPpobSettings,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -441,29 +448,30 @@ class _PpobSettingsScreenState extends State<PpobSettingsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            ...docs.map((doc) {
-              final data = doc.data();
-              return Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        AppTheme.primaryColor.withValues(alpha: 0.12),
-                    child: const Icon(Icons.apps_rounded,
-                        color: AppTheme.primaryColor),
+              ...docs.map((doc) {
+                final data = doc.data();
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          AppTheme.primaryColor.withValues(alpha: 0.12),
+                      child: const Icon(Icons.apps_rounded,
+                          color: AppTheme.primaryColor),
+                    ),
+                    title: Text(data['nama_aplikasi']?.toString() ?? ''),
+                    subtitle: Text(
+                      '${data['id_aplikasi'] ?? ''} • ${data['jenis_layanan'] ?? ''}',
+                    ),
+                    trailing: IconButton(
+                      onPressed: () => _showAppDialog(data: data),
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
                   ),
-                  title: Text(data['nama_aplikasi']?.toString() ?? ''),
-                  subtitle: Text(
-                    '${data['id_aplikasi'] ?? ''} • ${data['jenis_layanan'] ?? ''}',
-                  ),
-                  trailing: IconButton(
-                    onPressed: () => _showAppDialog(data: data),
-                    icon: const Icon(Icons.edit_outlined),
-                  ),
-                ),
-              );
-            }),
-          ],
+                );
+              }),
+            ],
+          ),
         );
       },
     );
@@ -478,9 +486,12 @@ class _PpobSettingsScreenState extends State<PpobSettingsScreen> {
           stream: BackendService.ppobServicesStream(),
           builder: (context, serviceSnapshot) {
             final serviceDocs = serviceSnapshot.data?.docs ?? [];
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
+            return RefreshIndicator.adaptive(
+              onRefresh: _refreshPpobSettings,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -523,65 +534,68 @@ class _PpobSettingsScreenState extends State<PpobSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...categoryDocs.map((categoryDoc) {
-                  final categoryData = categoryDoc.data();
-                  final services = serviceDocs
-                      .where((serviceDoc) =>
-                          serviceDoc.data()['category_id'] == categoryDoc.id)
-                      .toList();
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ExpansionTile(
-                      title:
-                          Text(categoryData['nama_kategori']?.toString() ?? ''),
-                      subtitle: Text(
-                        '${categoryData['id_kategori'] ?? ''} • ${categoryData['tipe_transaksi'] ?? ''}',
-                      ),
-                      trailing: IconButton(
-                        onPressed: () =>
-                            _showCategoryDialog(data: categoryData),
-                        icon: const Icon(Icons.edit_outlined),
-                      ),
-                      children: [
-                        if (services.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                context.tr(
-                                    'Belum ada layanan', 'No services yet'),
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ),
-                          )
-                        else
-                          ...services.map((serviceDoc) {
-                            final serviceData = serviceDoc.data();
-                            return ListTile(
-                              dense: true,
-                              leading: const Icon(
-                                  Icons.subdirectory_arrow_right_rounded),
-                              title: Text(
-                                  serviceData['nama_layanan']?.toString() ??
-                                      ''),
-                              subtitle: Text(
-                                '${serviceData['id_layanan'] ?? ''}${(serviceData['tipe_override'] ?? '').toString().isEmpty ? '' : ' • ${serviceData['tipe_override']}'}',
-                              ),
-                              trailing: IconButton(
-                                onPressed: () => _showServiceDialog(
-                                  categories: categoryDocs,
-                                  data: serviceData,
+                  ...categoryDocs.map((categoryDoc) {
+                    final categoryData = categoryDoc.data();
+                    final services = serviceDocs
+                        .where((serviceDoc) =>
+                            serviceDoc.data()['category_id'] == categoryDoc.id)
+                        .toList();
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ExpansionTile(
+                        title:
+                            Text(categoryData['nama_kategori']?.toString() ?? ''),
+                        subtitle: Text(
+                          '${categoryData['id_kategori'] ?? ''} • ${categoryData['tipe_transaksi'] ?? ''}',
+                        ),
+                        trailing: IconButton(
+                          onPressed: () =>
+                              _showCategoryDialog(data: categoryData),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                        children: [
+                          if (services.isEmpty)
+                            Padding(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  context.tr(
+                                      'Belum ada layanan', 'No services yet'),
+                                  style:
+                                      Theme.of(context).textTheme.bodySmall,
                                 ),
-                                icon: const Icon(Icons.edit_outlined),
                               ),
-                            );
-                          }),
-                      ],
-                    ),
-                  );
-                }),
-              ],
+                            )
+                          else
+                            ...services.map((serviceDoc) {
+                              final serviceData = serviceDoc.data();
+                              return ListTile(
+                                dense: true,
+                                leading: const Icon(
+                                    Icons.subdirectory_arrow_right_rounded),
+                                title: Text(
+                                    serviceData['nama_layanan']?.toString() ??
+                                        ''),
+                                subtitle: Text(
+                                  '${serviceData['id_layanan'] ?? ''}${(serviceData['tipe_override'] ?? '').toString().isEmpty ? '' : ' • ${serviceData['tipe_override']}'}',
+                                ),
+                                trailing: IconButton(
+                                  onPressed: () => _showServiceDialog(
+                                    categories: categoryDocs,
+                                    data: serviceData,
+                                  ),
+                                  icon: const Icon(Icons.edit_outlined),
+                                ),
+                              );
+                            }),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
             );
           },
         );

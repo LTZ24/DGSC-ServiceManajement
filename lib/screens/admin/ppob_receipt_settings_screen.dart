@@ -329,13 +329,16 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      body: RefreshIndicator.adaptive(
+        onRefresh: _loadData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -476,12 +479,14 @@ class _PpobReceiptSettingsScreenState extends State<PpobReceiptSettingsScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.save_outlined),
-                label: Text(context.tr('Simpan Pengaturan', 'Save Settings')),
-              ),
-            ],
+                ElevatedButton.icon(
+                  onPressed: _save,
+                  icon: const Icon(Icons.save_outlined),
+                  label:
+                      Text(context.tr('Simpan Pengaturan', 'Save Settings')),
+                ),
+              ],
+            ),
           ),
         ),
       ),

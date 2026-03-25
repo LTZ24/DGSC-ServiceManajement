@@ -24,6 +24,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _historyStream = BackendService.userBookingsStream(uid);
   }
 
+  Future<void> _refreshHistory() async {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,67 +43,88 @@ class _HistoryScreenState extends State<HistoryScreen> {
           final docs = snapshot.data?.docs ?? [];
           if (docs.isEmpty) {
             final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            return RefreshIndicator.adaptive(
+              onRefresh: _refreshHistory,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
                 children: [
-                  Icon(Icons.history, size: 64, color: mutedColor),
-                  const SizedBox(height: 16),
-                    Text(context.tr('Belum ada riwayat servis', 'No service history yet'),
-                      style: TextStyle(color: mutedColor)),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.55,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.history, size: 64, color: mutedColor),
+                        const SizedBox(height: 16),
+                        Text(
+                          context.tr(
+                            'Belum ada riwayat servis',
+                            'No service history yet',
+                          ),
+                          style: TextStyle(color: mutedColor),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final data = docs[index].data();
-              final status = data['status'] ?? 'pending';
-              return AppListCard(
-                child: ExpansionTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        _statusColor(status).withValues(alpha: 0.15),
-                    child: Icon(_statusIcon(status),
-                        color: _statusColor(status), size: 20),
-                  ),
-                  title: Text(
-                    '${data["brand"] ?? ""} ${data["model"] ?? ""}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 14),
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: StatusBadge(status: status),
-                  ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _row(
-                                context, context.tr('Perangkat', 'Device'), data['device_type'] ?? '-'),
-                              _row(context, context.tr('Merek', 'Brand'), data['brand'] ?? '-'),
-                              _row(context, context.tr('Model', 'Model'), data['model'] ?? '-'),
-                              _row(context, context.tr('Masalah', 'Issue'),
-                              data['issue_description'] ?? '-'),
-                              _row(context, context.tr('Tanggal', 'Date'),
-                              data['preferred_date'] ?? '-'),
-                          if ((data['diagnosis_result'] ?? '')
-                              .toString()
-                              .isNotEmpty)
-                            _row(
-                                context, context.tr('Diagnosis', 'Diagnosis'), data['diagnosis_result']),
-                        ],
-                      ),
+          return RefreshIndicator.adaptive(
+            onRefresh: _refreshHistory,
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final data = docs[index].data();
+                final status = data['status'] ?? 'pending';
+                return AppListCard(
+                  child: ExpansionTile(
+                    leading: CircleAvatar(
+                      backgroundColor:
+                          _statusColor(status).withValues(alpha: 0.15),
+                      child: Icon(_statusIcon(status),
+                          color: _statusColor(status), size: 20),
                     ),
-                  ],
-                ),
-              );
-            },
+                    title: Text(
+                      '${data["brand"] ?? ""} ${data["model"] ?? ""}',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: StatusBadge(status: status),
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _row(context, context.tr('Perangkat', 'Device'),
+                                data['device_type'] ?? '-'),
+                            _row(context, context.tr('Merek', 'Brand'),
+                                data['brand'] ?? '-'),
+                            _row(context, context.tr('Model', 'Model'),
+                                data['model'] ?? '-'),
+                            _row(context, context.tr('Masalah', 'Issue'),
+                                data['issue_description'] ?? '-'),
+                            _row(context, context.tr('Tanggal', 'Date'),
+                                data['preferred_date'] ?? '-'),
+                            if ((data['diagnosis_result'] ?? '')
+                                .toString()
+                                .isNotEmpty)
+                              _row(context, context.tr('Diagnosis', 'Diagnosis'),
+                                  data['diagnosis_result']),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
@@ -160,4 +186,3 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 }
-

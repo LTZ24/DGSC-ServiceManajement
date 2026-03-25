@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_text.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/theme_provider.dart';
-import '../../services/app_log_service.dart';
 import '../../services/backend_types.dart';
 import '../../services/backend_service.dart';
 
 import 'admin_profile_screen.dart';
 import '../app_lock/app_lock_settings_screen.dart';
-import '../../services/push_notification_service.dart';
 import '../../widgets/app_drawer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -26,7 +23,6 @@ class AdminSettingsScreen extends StatefulWidget {
 class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
-  PermissionStatus? _notificationStatus;
   static const String _developerUrl = 'https://github.com/LTZ24';
 
   Future<void> _openDeveloperLink() async {
@@ -46,7 +42,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
   void initState() {
     super.initState();
     _loadProfile();
-    _loadNotificationStatus();
   }
 
   Future<void> _loadProfile() async {
@@ -55,41 +50,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
       _profile = await BackendService.getUserProfile(uid);
     }
     if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _loadNotificationStatus() async {
-    final status = await Permission.notification.status;
-    if (mounted) {
-      setState(() => _notificationStatus = status);
-    }
-  }
-
-  Future<void> _requestNotificationPermission() async {
-    final status = await Permission.notification.request();
-    if (!mounted) return;
-
-    setState(() => _notificationStatus = status);
-    if (status.isGranted) {
-      final userId = BackendService.currentUser?.uid;
-      if (userId != null && userId.isNotEmpty) {
-        await PushNotificationService.markPermissionPromptHandled(userId);
-      }
-      await PushNotificationService.syncTopicSubscriptions(
-        userId: userId,
-        role: 'admin',
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              context.tr('Notifikasi diaktifkan ✓', 'Notifications enabled ✓')),
-          backgroundColor: AppTheme.successColor));
-    } else if (status.isPermanentlyDenied) {
-      openAppSettings();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(context.tr(
-              'Izin notifikasi ditolak', 'Notification permission denied'))));
-    }
   }
 
   Future<void> _showCreateAdminDialog() async {
@@ -337,77 +297,95 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
         '';
 
     return Scaffold(
-      appBar:
-          AppBar(title: Text(context.tr('Pengaturan Admin', 'Admin Settings'))),
+      appBar: AppBar(
+        title: Text(context.tr('Pengaturan Admin', 'Admin Settings')),
+      ),
       drawer: const AppDrawer(isAdmin: true),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: RefreshIndicator.adaptive(
+        onRefresh: _loadProfile,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
           // ── Akun ─────────────────────────────────────────────────
           _sectionHeader(context, context.tr('Akun', 'Account')),
-          Card(
+          _settingsCard(
             child: ListTile(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AdminProfileScreen()),
-                  );
-                },
-                leading: CircleAvatar(
-                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  child: Text(
-                    username[0].toUpperCase(),
-                    style: const TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminProfileScreen()),
+                );
+              },
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: CircleAvatar(
+                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                child: Text(
+                  username[0].toUpperCase(),
+                  style: const TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
                   ),
                 ),
-                title: Text(username,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(email),
-                trailing: const Icon(Icons.chevron_right),
               ),
-            ),
-            const SizedBox(height: 12),
-            _settingsCard(
-              child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                leading: CircleAvatar(
-                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  child: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
-                ),
-                title: const Text('App Lock & Keamanan'),
-                subtitle: const Text('Kelola PIN dan Biometrik keamanan aplikasi'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const AppLockSettingsScreen()),
-                  );
-                },
+              title: Text(
+                username,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
+              subtitle: Text(email),
+              trailing: const Icon(Icons.chevron_right),
             ),
+          ),
+          const SizedBox(height: 12),
           _settingsCard(
             child: ListTile(
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: CircleAvatar(
+                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                child: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
+              ),
+              title: Text(context.tr('App Lock & Keamanan', 'App Lock & Security')),
+              subtitle: Text(context.tr(
+                'Kelola PIN, biometrik, dan keamanan aplikasi',
+                'Manage app PIN, biometrics, and security',
+              )),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AppLockSettingsScreen()),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          _settingsCard(
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: const CircleAvatar(
                 backgroundColor: Color(0x141D4ED8),
-                child: Icon(Icons.admin_panel_settings_outlined,
-                    color: AppTheme.primaryColor),
+                child: Icon(
+                  Icons.admin_panel_settings_outlined,
+                  color: AppTheme.primaryColor,
+                ),
               ),
-              title:
-                  Text(context.tr('Buat Akun Admin', 'Create Admin Account')),
-              subtitle: Text(context.tr('Admin baru untuk panel pengelolaan.',
-                  'New admin for the management panel.')),
+              title: Text(context.tr('Buat Akun Admin', 'Create Admin Account')),
+              subtitle: Text(context.tr(
+                'Tambahkan admin baru untuk panel pengelolaan.',
+                'Add a new admin for the management panel.',
+              )),
               trailing: ElevatedButton.icon(
                 onPressed: _showCreateAdminDialog,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  minimumSize: const Size(0, 46),
+                ),
                 icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                label: Text(context.tr('+', '+')),
+                label: Text(context.tr('Buat akun', 'Create account')),
               ),
             ),
           ),
@@ -433,7 +411,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           _settingsCard(
             child: ListTile(
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: const Icon(Icons.language, color: AppTheme.primaryColor),
               title: Text(context.tr('Bahasa', 'Language')),
               subtitle: Text(
@@ -464,7 +442,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
           _settingsCard(
             child: ListTile(
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               leading: const Icon(Icons.dataset_linked_outlined,
                   color: AppTheme.primaryColor),
               title: Text(
@@ -475,36 +453,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () =>
                   Navigator.pushNamed(context, '/admin/diagnosis-editor'),
-            ),
-          ),
-
-          // ── Notifikasi ────────────────────────────────────────────
-          const SizedBox(height: 20),
-          _sectionHeader(context, context.tr('Notifikasi', 'Notifications')),
-          _settingsCard(
-            child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              leading: const Icon(Icons.notifications_outlined,
-                  color: AppTheme.infoColor),
-              title: Text(context.tr('Notifikasi Push', 'Push Notifications')),
-              subtitle: Text(context.tr('Izinkan notifikasi dari aplikasi ini',
-                  'Allow notifications from this application')),
-              trailing: _notificationStatus == null
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : _notificationStatus!.isGranted
-                      ? const Icon(Icons.check_circle,
-                          color: AppTheme.successColor)
-                      : ElevatedButton(
-                          onPressed: _requestNotificationPermission,
-                          child: Text(_notificationStatus!.isPermanentlyDenied
-                              ? context.tr('Buka', 'Open')
-                              : context.tr('Aktifkan', 'Enable')),
-                        ),
             ),
           ),
 
@@ -525,7 +473,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                   leading: const Icon(Icons.info_outline,
                       color: AppTheme.primaryColor),
                   title: Text(context.tr('Versi Aplikasi', 'App Version')),
-                  trailing: const Text('1.0.1',
+                  trailing: const Text('1.0.2',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
                 ListTile(
@@ -571,9 +519,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.receipt_long, color: AppTheme.primaryColor),
               title: Text(context.tr('Log', 'Log')),
-              subtitle: Text(context.tr(
-                  'view apps logs',
-                  'view apps logs')),
+              subtitle: Text(context.tr('Lihat log aplikasi dan error terbaru', 'View application logs and recent errors')),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.pushNamed(context, '/admin/logs'),
             ),
@@ -622,8 +568,9 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
               },
             ),
           ),
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -649,4 +596,3 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     );
   }
 }
-

@@ -197,7 +197,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('Profil', 'Profile'))),
-      drawer: const AppDrawer(isAdmin: false),
+      drawer: const AppDrawer(isAdmin: true),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

@@ -57,17 +57,22 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
   String get _footer =>
       (widget.receiptSettings['footer_text'] ?? '').toString().trim();
 
+  Map<String, dynamic> get _receiptPayload =>
+      Map<String, dynamic>.from(
+        (widget.transaction['receipt_payload'] as Map?) ?? const {},
+      );
+
   String get _serviceName =>
-      (widget.transaction['service_name'] ?? 'Transaksi PPOB').toString();
+      (widget.transaction['service_name'] ?? widget.transaction['product_name'] ?? 'Transaksi PPOB').toString();
 
   String get _transactionCode =>
       (widget.transaction['transaction_code'] ?? '-').toString();
 
   String get _targetNumber =>
-      (widget.transaction['target_number'] ?? '').toString().trim();
+      (widget.transaction['target_number'] ?? widget.transaction['customer_phone'] ?? '').toString().trim();
 
   String get _customerName =>
-      (widget.transaction['customer_info'] ?? '').toString().trim();
+      (widget.transaction['customer_info'] ?? widget.transaction['customer_name'] ?? '').toString().trim();
 
   String get _createdBy => (widget.transaction['created_by_name'] ??
           widget.transaction['staff_name'] ??
@@ -82,10 +87,32 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
       (widget.transaction['token_customer_id'] ?? '').toString().trim();
 
   String get _targetLabel =>
-      PpobPrintService.receiptTargetLabel(widget.transaction);
+      (_receiptPayload['target_label'] ??
+              widget.transaction['target_label'] ??
+              PpobPrintService.receiptTargetLabel(widget.transaction))
+          .toString();
 
   String get _customerLabel =>
-      PpobPrintService.receiptCustomerLabel(widget.transaction);
+      (_receiptPayload['customer_label'] ??
+              widget.transaction['customer_label'] ??
+              PpobPrintService.receiptCustomerLabel(widget.transaction))
+          .toString();
+
+  List<Map<String, dynamic>> get _lineItems {
+    final source = (_receiptPayload['line_items'] as List?) ??
+        (widget.transaction['line_items'] as List?) ??
+        const [];
+    return source
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  List<Map<String, dynamic>> get _extraFields {
+    final source = (_receiptPayload['extra_fields'] as List?) ?? const [];
+    return source
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
 
   DateTime get _createdAt {
     final raw = widget.transaction['transaction_date'];
@@ -105,6 +132,22 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
     return '${two(value.day)}/${two(value.month)}/${value.year} ${two(value.hour)}:${two(value.minute)}:${two(value.second)}';
   }
 
+  String _lineItemTitle(Map<String, dynamic> item) {
+    final name = (item['part_name'] ?? item['name'] ?? '-').toString();
+    final code = (item['part_code'] ?? '').toString().trim();
+    return code.isEmpty ? name : '$name • $code';
+  }
+
+  int _lineItemQty(Map<String, dynamic> item) {
+    return int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
+  }
+
+  double _lineItemTotal(Map<String, dynamic> item) {
+    final explicit = _asDouble(item['total_selling']);
+    if (explicit > 0) return explicit;
+    return _asDouble(item['selling_price']) * _lineItemQty(item);
+  }
+
   List<_ReceiptField> _receiptFields() {
     final modal = _asDouble(widget.transaction['modal_price']);
     final selling = _asDouble(widget.transaction['selling_price']);
@@ -113,7 +156,8 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
       _ReceiptField('Waktu', _formatDate(_createdAt)),
       _ReceiptField('USN', _createdBy.isEmpty ? 'Admin' : _createdBy),
       _ReceiptField('No Trx', _transactionCode),
-      if (_targetNumber.isNotEmpty) _ReceiptField(_targetLabel, _targetNumber),
+      if (_targetNumber.isNotEmpty)
+        _ReceiptField(_targetLabel, _targetNumber),
       if (_customerName.isNotEmpty)
         _ReceiptField(_customerLabel, _customerName),
       if (_tokenId.isNotEmpty) _ReceiptField('Token', _tokenId),
@@ -302,22 +346,26 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
                 children: [
                   RepaintBoundary(
                     key: _receiptKey,
-                    child: Container(
-                      width: 320,
-                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x14000000),
-                            blurRadius: 20,
-                            offset: Offset(0, 10),
+                    child: Theme(
+                      data: ThemeData.light(useMaterial3: true),
+                      child: DefaultTextStyle(
+                        style: const TextStyle(color: Colors.black87),
+                        child: Container(
+                          width: 320,
+                          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x14000000),
+                                blurRadius: 20,
+                                offset: Offset(0, 10),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
                             _providerApp,
@@ -365,8 +413,7 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
                                     child: Text(
                                       field.label,
                                       style: TextStyle(
-                                        fontSize:
-                                            field.isEmphasis ? 14.5 : 13.5,
+                                        fontSize: field.isEmphasis ? 14.5 : 13.5,
                                         fontWeight: field.isEmphasis
                                             ? FontWeight.w700
                                             : FontWeight.w500,
@@ -374,8 +421,7 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
                                     ),
                                   ),
                                   const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 6),
+                                    padding: EdgeInsets.symmetric(horizontal: 6),
                                     child: Text(':',
                                         style: TextStyle(fontSize: 14)),
                                   ),
@@ -384,8 +430,7 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
                                       field.value,
                                       textAlign: TextAlign.right,
                                       style: TextStyle(
-                                        fontSize:
-                                            field.isEmphasis ? 14.5 : 13.5,
+                                        fontSize: field.isEmphasis ? 14.5 : 13.5,
                                         fontWeight: field.isEmphasis
                                             ? FontWeight.w700
                                             : FontWeight.w500,
@@ -396,6 +441,93 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
                               ),
                             ),
                           ),
+                          if (_extraFields.isNotEmpty) ...[
+                            const Divider(height: 16),
+                            ..._extraFields.map(
+                              (field) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: 76,
+                                      child: Text(
+                                        (field['label'] ?? '-').toString(),
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 6),
+                                      child: Text(':',
+                                          style: TextStyle(fontSize: 14)),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        (field['value'] ?? '-').toString(),
+                                        textAlign: TextAlign.right,
+                                        style: const TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (_lineItems.isNotEmpty) ...[
+                            const Divider(height: 16),
+                            Text(
+                              context.tr('Detail Item', 'Item Details'),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            ..._lineItems.map(
+                              (item) => Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _lineItemTitle(item),
+                                            style: const TextStyle(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${context.tr('Qty', 'Qty')} ${_lineItemQty(item)}',
+                                            style: const TextStyle(fontSize: 12.5),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      _formatMoney(_lineItemTotal(item)),
+                                      textAlign: TextAlign.right,
+                                      style: const TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                           const Divider(height: 16),
                           if (_footer.isNotEmpty)
                             Text(
@@ -412,7 +544,9 @@ class _PpobReceiptPreviewScreenState extends State<PpobReceiptPreviewScreen> {
                               textAlign: TextAlign.center,
                               style: const TextStyle(fontSize: 13),
                             ),
-                        ],
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),

@@ -195,6 +195,15 @@ class PpobPrintService {
         double.tryParse(transaction['profit']?.toString() ?? '') ??
         (sellingPrice - modalPrice);
     final normalizedAdminFee = adminFee < 0 ? 0 : adminFee;
+    final payload = _receiptPayload(transaction);
+    final extraFields = ((payload['extra_fields'] as List?) ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+    final lineItems = ((payload['line_items'] as List?) ??
+            (transaction['line_items'] as List?) ??
+            const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
     final targetLabel = receiptTargetLabel(transaction);
     final customerLabel = receiptCustomerLabel(transaction);
     final title = serviceName.toLowerCase().startsWith('struk ')
@@ -226,6 +235,24 @@ class PpobPrintService {
     }
     if (tokenId.isNotEmpty) {
       _receiptRow(r, 'Token', tokenId);
+    }
+    for (final field in extraFields) {
+      final label = (field['label'] ?? '').toString().trim();
+      final value = (field['value'] ?? '').toString().trim();
+      if (label.isEmpty || value.isEmpty) continue;
+      _receiptRow(r, label, value);
+    }
+    if (lineItems.isNotEmpty) {
+      r.hr();
+      r.text('Detail Item', bold: true);
+      for (final item in lineItems) {
+        final name = (item['part_name'] ?? item['name'] ?? '-').toString();
+        final code = (item['part_code'] ?? '').toString().trim();
+        final qty = int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
+        final total = _asItemTotal(item);
+        final label = code.isEmpty ? name : '$name ($code)';
+        _receiptRow(r, '$label x$qty', _formatMoney(total));
+      }
     }
     r.hr();
     _receiptRow(r, 'Jumlah', _formatMoney(modalPrice));
@@ -329,6 +356,19 @@ class PpobPrintService {
       );
     }
     return const <String, dynamic>{};
+  }
+
+  static double _asItemTotal(Map<String, dynamic> item) {
+    final explicit = (item['total_selling'] as num?)?.toDouble() ??
+        double.tryParse(item['total_selling']?.toString() ?? '') ??
+        0;
+    if (explicit > 0) return explicit;
+
+    final qty = int.tryParse(item['qty']?.toString() ?? '0') ?? 0;
+    final price = (item['selling_price'] as num?)?.toDouble() ??
+        double.tryParse(item['selling_price']?.toString() ?? '0') ??
+        0;
+    return qty * price;
   }
 
   static void _receiptRow(

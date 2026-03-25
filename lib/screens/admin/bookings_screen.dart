@@ -25,6 +25,11 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
     _bookingsStream = BackendService.allBookingsStream();
   }
 
+  Future<void> _refreshBookings() async {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,9 +75,23 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(
-                child:
-                    Text('${context.tr('Error', 'Error')}: ${snapshot.error}'));
+            return RefreshIndicator.adaptive(
+              onRefresh: _refreshBookings,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.55,
+                    child: Center(
+                      child: Text(
+                        '${context.tr('Error', 'Error')}: ${snapshot.error}',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           var docs = sourceDocs;
           if (_statusFilter != null) {
@@ -84,42 +103,56 @@ class _AdminBookingsScreenState extends State<AdminBookingsScreen> {
           }
           if (docs.isEmpty) {
             final mutedColor = Theme.of(context).colorScheme.onSurfaceVariant;
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            return RefreshIndicator.adaptive(
+              onRefresh: _refreshBookings,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
                 children: [
-                  Icon(Icons.calendar_today, size: 64, color: mutedColor),
-                  const SizedBox(height: 16),
-                  Text(context.tr('Tidak ada booking', 'No bookings'),
-                      style: TextStyle(color: mutedColor)),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.55,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.calendar_today, size: 64, color: mutedColor),
+                        const SizedBox(height: 16),
+                        Text(context.tr('Tidak ada booking', 'No bookings'),
+                            style: TextStyle(color: mutedColor)),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final doc = docs[index];
-              final data = Map<String, dynamic>.from(doc.data());
-              final overrideStatus = _statusOverrides[doc.id];
-              if (overrideStatus != null) {
-                data['status'] = overrideStatus;
-              }
-              return _BookingCard(
-                docId: doc.id,
-                data: data,
-                onStatusChanged: (status) {
-                  setState(() {
-                    if (status == null) {
-                      _statusOverrides.remove(doc.id);
-                    } else {
-                      _statusOverrides[doc.id] = status;
-                    }
-                  });
-                },
-              );
-            },
+          return RefreshIndicator.adaptive(
+            onRefresh: _refreshBookings,
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final doc = docs[index];
+                final data = Map<String, dynamic>.from(doc.data());
+                final overrideStatus = _statusOverrides[doc.id];
+                if (overrideStatus != null) {
+                  data['status'] = overrideStatus;
+                }
+                return _BookingCard(
+                  docId: doc.id,
+                  data: data,
+                  onStatusChanged: (status) {
+                    setState(() {
+                      if (status == null) {
+                        _statusOverrides.remove(doc.id);
+                      } else {
+                        _statusOverrides[doc.id] = status;
+                      }
+                    });
+                  },
+                );
+              },
+            ),
           );
         },
       ),

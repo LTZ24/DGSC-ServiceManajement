@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'app_log_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -26,6 +29,7 @@ class PushNotificationService {
 
   static bool _initialized = false;
   static const _permissionsPromptPrefix = 'initial_permissions_prompted_';
+  static const _initialAppPermissionsKey = 'initial_app_permissions_prompted';
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -43,9 +47,57 @@ class PushNotificationService {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(_channel);
 
+    await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    await _messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      unawaited(AppLogService.log(
+        'Push notification opened: ${_messageLogLabel(message)}',
+      ));
+    });
+
+    final initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      await AppLogService.log(
+        'Push notification opened from terminated state: ${_messageLogLabel(initialMessage)}',
+      );
+    }
+
+    final token = await _messaging.getToken();
+    await AppLogService.log(
+      token == null || token.isEmpty
+          ? 'FCM token unavailable during initialization'
+          : 'FCM token initialized successfully',
+    );
 
     _initialized = true;
+  }
+
+
+  static Future<void> requestInitialAppPermissions() async {
+    await initialize();
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_initialAppPermissionsKey) == true) return;
+
+    await _requestPermissionIfNeeded(Permission.storage);
+    await _requestPermissionIfNeeded(Permission.camera);
+    final notificationGranted =
+        await _requestPermissionIfNeeded(Permission.notification);
+    if (notificationGranted) {
+      await _ensureRemoteMessagingReady();
+    }
+
+    await prefs.setBool(_initialAppPermissionsKey, true);
   }
 
   static Future<void> requestFirstLoginPermissions(
@@ -95,7 +147,7 @@ class PushNotificationService {
 
     final notificationStatus = await Permission.notification.request();
     if (notificationStatus.isGranted) {
-      await _messaging.getToken();
+      await _ensureRemoteMessagingReady();
       await syncTopicSubscriptions(userId: userId, role: role);
     } else if (notificationStatus.isPermanentlyDenied) {
       await openAppSettings();
@@ -108,10 +160,37 @@ class PushNotificationService {
     await prefs.setBool('$_permissionsPromptPrefix$userId', true);
   }
 
+  static Future<bool> _requestPermissionIfNeeded(Permission permission) async {
+    final status = await permission.status;
+    if (status.isGranted || status.isLimited) return true;
+    if (status.isPermanentlyDenied) return false;
+    if (status.isDenied || status.isRestricted || status.isLimited) {
+      final result = await permission.request();
+      return result.isGranted || result.isLimited;
+    }
+    return false;
+  }
+
+  static Future<void> _ensureRemoteMessagingReady() async {
+    await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    final token = await _messaging.getToken();
+    await AppLogService.log(
+      token == null || token.isEmpty
+          ? 'FCM token still unavailable after permission grant'
+          : 'FCM token ready after permission grant',
+    );
+  }
+
   static Future<void> syncTopicSubscriptions({
     String? userId,
     String? role,
   }) async {
+    await initialize();
     final prefs = await SharedPreferences.getInstance();
     final previousUserId = prefs.getString('push_user_id');
     final previousRole = prefs.getString('push_user_role');
@@ -147,13 +226,19 @@ class PushNotificationService {
   }
 
   static Future<void> _showForegroundNotification(RemoteMessage message) async {
-    final notification = message.notification;
-    if (notification == null) return;
+    final title = _resolveTitle(message);
+    final body = _resolveBody(message);
+    if (body.isEmpty) {
+      await AppLogService.log(
+        'Foreground push ignored because payload body is empty: ${_messageLogLabel(message)}',
+      );
+      return;
+    }
 
     await _localNotifications.show(
       message.hashCode,
-      notification.title,
-      notification.body,
+      title,
+      body,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _channel.id,
@@ -162,8 +247,36 @@ class PushNotificationService {
           importance: Importance.high,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
+          playSound: true,
+          enableVibration: true,
+          channelAction: AndroidNotificationChannelAction.createIfNotExists,
         ),
       ),
     );
+    await AppLogService.log(
+      'Foreground push displayed: ${_messageLogLabel(message)}',
+    );
+  }
+
+  static String _resolveTitle(RemoteMessage message) {
+    final notificationTitle = message.notification?.title?.trim() ?? '';
+    final dataTitle = message.data['title']?.toString().trim() ?? '';
+    if (notificationTitle.isNotEmpty) return notificationTitle;
+    if (dataTitle.isNotEmpty) return dataTitle;
+    return 'Notifikasi DGSC';
+  }
+
+  static String _resolveBody(RemoteMessage message) {
+    final notificationBody = message.notification?.body?.trim() ?? '';
+    final dataBody = message.data['message']?.toString().trim() ??
+        message.data['body']?.toString().trim() ??
+        '';
+    if (notificationBody.isNotEmpty) return notificationBody;
+    return dataBody;
+  }
+
+  static String _messageLogLabel(RemoteMessage message) {
+    final source = Platform.isAndroid ? 'android' : 'mobile';
+    return '$source | ${_resolveTitle(message)}';
   }
 }

@@ -213,6 +213,12 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
+  Future<void> _refreshBooking() async {
+    await context.read<AuthProvider>().refreshProfile();
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -222,13 +228,16 @@ class _BookingScreenState extends State<BookingScreen> {
       appBar:
           AppBar(title: Text(context.tr('Booking Servis', 'Service Booking'))),
       drawer: const AppDrawer(isAdmin: false),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+      body: RefreshIndicator.adaptive(
+        onRefresh: _refreshBooking,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 450),
                 tween: Tween(begin: 0.96, end: 1),
@@ -516,23 +525,24 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                height: 54,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _submitBooking,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.send),
-                  label: Text(_isLoading
-                      ? context.tr('Mengirim...', 'Sending...')
-                      : context.tr('Kirim Booking', 'Submit Booking')),
+                SizedBox(
+                  height: 54,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _submitBooking,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.send),
+                    label: Text(_isLoading
+                        ? context.tr('Mengirim...', 'Sending...')
+                        : context.tr('Kirim Booking', 'Submit Booking')),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

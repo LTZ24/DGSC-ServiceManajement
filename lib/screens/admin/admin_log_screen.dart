@@ -231,38 +231,61 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
 
                 // ── List / empty state ────────────────────────
                 Expanded(
-                  child: _entries.isEmpty
-                      ? _EmptyState(isDark: isDark)
-                      : filtered.isEmpty
-                          ? Center(
-                              child: Text(
-                                context.tr(
-                                  'Tidak ada log untuk level ini.',
-                                  'No logs for this level.',
-                                ),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                        color: scheme.onSurfaceVariant),
+                  child: RefreshIndicator.adaptive(
+                    onRefresh: _load,
+                    child: _entries.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              SizedBox(
+                                height: MediaQuery.of(context).size.height * 0.55,
+                                child: _EmptyState(isDark: isDark),
                               ),
-                            )
-                          : ListView.separated(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                              itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 8),
-                              itemBuilder: (context, index) {
-                                final entry = filtered[index];
-                                return _LogCard(
-                                  entry: entry,
-                                  color: _levelColor(entry.level),
-                                  icon: _levelIcon(entry.level),
-                                  isDark: isDark,
-                                );
-                              },
-                            ),
+                            ],
+                          )
+                        : filtered.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(16),
+                                children: [
+                                  SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height * 0.45,
+                                    child: Center(
+                                      child: Text(
+                                        context.tr(
+                                          'Tidak ada log untuk level ini.',
+                                          'No logs for this level.',
+                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                                color: scheme.onSurfaceVariant),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                                itemCount: filtered.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 8),
+                                itemBuilder: (context, index) {
+                                  final entry = filtered[index];
+                                  return _LogCard(
+                                    entry: entry,
+                                    color: _levelColor(entry.level),
+                                    icon: _levelIcon(entry.level),
+                                    isDark: isDark,
+                                  );
+                                },
+                              ),
+                  ),
                 ),
               ],
             ),

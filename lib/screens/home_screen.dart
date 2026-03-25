@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../services/admin_biometric_service.dart';
-import '../services/backend_service.dart';
 import '../config/theme.dart';
 import '../l10n/app_text.dart';
 import '../providers/auth_provider.dart';
@@ -58,6 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _refreshHome() async {
+    await _checkAndRedirect();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Show loading while checking auth
@@ -105,16 +107,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              isCompactHeader ? 12 : 16,
-              20,
-              isCompactHeader ? 16 : 20,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+          child: RefreshIndicator.adaptive(
+            onRefresh: _refreshHome,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                isCompactHeader ? 12 : 16,
+                20,
+                isCompactHeader ? 16 : 20,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
                 Container(
                   width: double.infinity,
                   padding: EdgeInsets.fromLTRB(
@@ -323,8 +328,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: subtitleColor,
                   ),
                 ),
-                const SizedBox(height: 8),
-              ],
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
           ),
         ),
@@ -350,13 +356,12 @@ class _HomeScreenState extends State<HomeScreen> {
             _infoRow(Icons.apps, context.tr('Nama', 'Name'),
                 'DigiTech Service Center'),
             _infoRow(
-              Icons.info_outline, context.tr('Versi', 'Version'), '1.0.1'),
+              Icons.info_outline, context.tr('Versi', 'Version'), '1.0.2'),
             _infoRow(Icons.code, context.tr('Developer', 'Developer'),
                 'Muhamad Latip M.'),
             _infoRow(Icons.link, 'GitHub', 'github.com/LTZ24'),
             _infoRow(Icons.storage, context.tr('Server', 'Server'),
               'Supabase PostgreSQL'),
-            _infoRow(Icons.cloud, 'Platform', 'Supabase'),
             _infoRow(Icons.phone_iphone, 'Build', 'Flutter 3.x'),
           ],
         ),
